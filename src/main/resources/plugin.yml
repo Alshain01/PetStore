@@ -1,0 +1,16 @@
+name: ${project.name}
+version: ${project.version}
+description: ${project.description}
+author: ${project.author}
+website: ${project.url}
+main: ${project.main}
+commands:
+  ${project.name}:
+    description: ${project.name} command
+    permission: ${project.name}.Command
+    aliases: ps
+    usage: /${project.name} give <player> OR /${project.name} sell <price>
+permission:
+  ${project.name}.Command:
+    description: Allows access to the ${project.name} command.
+    default: op
