@@ -8,7 +8,7 @@ commands:
   ${project.name}:
     description: ${project.name} command
     permission: ${project.name}.Command
-    aliases: ps
+    aliases: pet
     usage: /${project.name} give <player> OR /${project.name} sell <price>
 permission:
   ${project.name}.Command:

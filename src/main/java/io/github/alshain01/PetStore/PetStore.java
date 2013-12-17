@@ -7,48 +7,53 @@ import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
-import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Tameable;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
+import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.entity.Entity;
 import org.bukkit.scheduler.BukkitRunnable;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class PetStore extends JavaPlugin {
-    //<Sender, Receiver>
-    private ConcurrentHashMap<UUID, String> giveQueue = new ConcurrentHashMap<UUID, String>();
-
-    //<Owner, Cost>
-    private ConcurrentHashMap<UUID, Double> sellQueue = new ConcurrentHashMap<UUID, Double>();
-
-    //<Buyer, Animal>
-    private ConcurrentHashMap<UUID, UUID> buyQueue = new ConcurrentHashMap<UUID, UUID>();
-
-    //<Animal, Cost>
-    private ConcurrentHashMap<UUID, Double> sales = new ConcurrentHashMap<UUID, Double>();
+    public static final long timeout = 100;
+    public static final ChatColor errorColor = ChatColor.RED;
+    public static final ChatColor warnColor = ChatColor.YELLOW;
+    public static final ChatColor notifyColor = ChatColor.BLUE;
+    public static final ChatColor successColor = ChatColor.GREEN;
 
     private Economy economy = null;
+    private TransferAnimal transfer = new TransferAnimal();
+    private GiveAnimal give;
+    private SellAnimal sales;
+
+    //<Owner, Cost>
+    //private ConcurrentHashMap<UUID, Double> sellQueue = new ConcurrentHashMap<UUID, Double>();
+
+    //<Buyer, Animal>
+    //private ConcurrentHashMap<UUID, UUID> buyQueue = new ConcurrentHashMap<UUID, UUID>();
+
+    //<Animal, Cost>
+    //private ConcurrentHashMap<UUID, Double> sales = new ConcurrentHashMap<UUID, Double>();
 
     @Override
     public void onEnable() {
-        Map<String, Object> readSales =
-                new CustomYML(this, "data.yml").getConfig().getConfigurationSection("Sales").getValues(false);
-        for(String s : readSales.keySet()) {
-            sales.put(UUID.fromString(s), (Double) readSales.get(s));
-        }
+        CustomYML yml = new CustomYML(this, "data.yml");
 
+        // Read give aways from file
+        give = new GiveAnimal(yml.getConfig().getList("Give", new ArrayList<String>()));
 
-        Bukkit.getServer().getPluginManager().registerEvents(new Handlers(), this);
+        PluginManager pm = Bukkit.getPluginManager();
+        pm.registerEvents(transfer, this);
+        pm.registerEvents(give, this);
 
+        // Initialize economy
         if (Bukkit.getServer().getPluginManager().isPluginEnabled("Vault")) {
             final RegisteredServiceProvider<Economy> economyProvider = Bukkit
                 .getServer().getServicesManager()
@@ -58,50 +63,60 @@ public class PetStore extends JavaPlugin {
                 economy = economyProvider.getProvider();
             }
         }
+
+        // Read sales from file
+        if(economy != null) {
+            sales = new SellAnimal(yml.getConfig().getMapList("Sales"));
+            pm.registerEvents(sales, this);
+        }
     }
 
     @Override
     public void onDisable() {
-        Map<String, Object> writeSales = new HashMap<String, Object>();
-        for(UUID u : sales.keySet()) {
-            writeSales.put(u.toString(), sales.get(u));
+        CustomYML yml = new CustomYML(this, "data.yml");
+
+        // Write give aways to file
+        yml.getConfig().set("Give", give.get());
+
+        // Write sales to file
+        if(economy != null) {
+            yml.getConfig().set("Sales", sales.get());
         }
-        new CustomYML(this, "data.yml").getConfig().set("Sales", writeSales);
     }
 
     @Override
     public boolean onCommand(final CommandSender sender, Command cmd, String label, String[] args) {
-        if(!cmd.getName().equalsIgnoreCase("petstore") || args.length < 2) {
+        if(!cmd.getName().equalsIgnoreCase("petstore") || args.length < 1) {
             return false;
         }
 
         if(!(sender instanceof Player)) {
-            sender.sendMessage(ChatColor.RED + "PetStore commands may not be used from the console.");
+            sender.sendMessage(errorColor + "PetStore commands may not be used from the console.");
         }
 
+        // Give command action
         if(args[0].equalsIgnoreCase("give")) {
+            give.add(this, (Player)sender);
+            return true;
+        }
+
+        if(args.length < 2) {
+            return false;
+        }
+
+        // Transfer command action
+        if(args[0].equalsIgnoreCase("transfer")) {
             Player player = Bukkit.getServer().getPlayer(args[1]);
             if (player == null) {
-                sender.sendMessage(ChatColor.RED + "Player could not be found on the server.");
+                sender.sendMessage(errorColor + "Player could not be found on the server.");
                 return false;
             }
 
-            if(giveQueue.contains(((Player) sender).getUniqueId())) {
-                giveQueue.remove(((Player) sender).getUniqueId());
-            }
-
-            giveQueue.put(((Player) sender).getUniqueId(), player.getName());
-            sender.sendMessage(ChatColor.YELLOW + "Right click the tamed animal you wish to give.");
-            new BukkitRunnable() {
-                public void run() {
-                    if(giveQueue.contains(((Player) sender).getUniqueId())) {
-                        giveQueue.remove(((Player) sender).getUniqueId());
-                        sender.sendMessage(ChatColor.BLUE + "Animal transfer timed out.");
-                    }
-                }
-            }.runTaskLater(this, 100);
+            transfer.add(this, (Player) sender, player);
+            return true;
         }
 
+        // Sell command action
         if(args[0].equalsIgnoreCase("sell")) {
             if(economy == null) {
                 sender.sendMessage("Vault is not configured on this server.");
@@ -112,40 +127,26 @@ public class PetStore extends JavaPlugin {
             try {
                 price = Double.valueOf(args[1]);
             } catch (NumberFormatException e) {
-                sender.sendMessage(ChatColor.RED + "Please enter a valid price.");
+                sender.sendMessage(errorColor + "Please enter a valid price.");
                 return true;
             }
 
             sellQueue.put(((Player)sender).getUniqueId(), price);
-            sender.sendMessage(ChatColor.YELLOW + "Right click the tamed animal you wish to sell.");
+            sender.sendMessage(warnColor + "Right click the tamed animal you wish to sell.");
             new BukkitRunnable() {
                 public void run() {
                     if(sellQueue.contains(((Player) sender).getUniqueId())) {
                         sellQueue.remove(((Player) sender).getUniqueId());
-                        sender.sendMessage(ChatColor.BLUE + "Animal sell timed out.");
+                        sender.sendMessage(notifyColor + "Animal sell timed out.");
                     }
                 }
-            }.runTaskLater(this, 100);
+            }.runTaskLater(this, timeout);
         }
 
         return false;
     }
 
-    private void giveAnimal(Player player, Tameable animal) {
-        Player receiver = Bukkit.getServer().getPlayer(giveQueue.get(player.getUniqueId()));
-        if (receiver == null) {
-            player.sendMessage(ChatColor.RED + "Player could not be found on the server.");
-            giveQueue.remove(player.getUniqueId());
-            return;
-        }
 
-        animal.setOwner(receiver);
-        giveQueue.remove(player.getUniqueId());
-        player.sendMessage(ChatColor.DARK_GREEN + "The animal ownership has been transferred to " + receiver.getName() + ".");
-        Location petLoc = ((Entity)animal).getLocation();
-        receiver.sendMessage(ChatColor.DARK_GREEN + player.getName() + " has given you ownership of an animal currently at "
-                + petLoc.getBlockX() + "," + petLoc.getBlockZ() + ".");
-    }
 
     private void sellAnimal(Player player, Tameable animal) {
         double cost = sellQueue.get(player.getUniqueId());
@@ -156,11 +157,11 @@ public class PetStore extends JavaPlugin {
                 sales.remove(pet.getUniqueId());
             }
             sales.put(pet.getUniqueId(), sellQueue.get(player.getUniqueId()));
-            player.sendMessage(ChatColor.BLUE + "The animal has been listed for sale at " + economy.format(cost));
+            player.sendMessage(notifyColor + "The animal has been listed for sale at " + economy.format(cost));
         } else {
             if(sales.contains(pet.getUniqueId())) {
                 sales.remove(pet.getUniqueId());
-                player.sendMessage(ChatColor.BLUE + "The animal is no longer listed for sale.");
+                player.sendMessage(successColor + "The animal is no longer listed for sale.");
             }
         }
         sellQueue.remove(player.getUniqueId());
@@ -177,22 +178,22 @@ public class PetStore extends JavaPlugin {
                 r = economy.depositPlayer(animal.getOwner().getName(), price);
                 if(!r.transactionSuccess()) {
                     r = economy.depositPlayer(player.getName(), price);
-                    player.sendMessage(ChatColor.RED + "There was an error processing the transaction.");
+                    player.sendMessage(warnColor + "There was an error processing the transaction.");
                     return;
                 }
             }
             animal.setOwner(player);
-            player.sendMessage(ChatColor.DARK_GREEN + "Transaction successful.");
-            player.sendMessage(ChatColor.DARK_GREEN + player.getName()
+            player.sendMessage(successColor + "Transaction successful.");
+            player.sendMessage(successColor + player.getName()
                     + " has purchased an animal for " + economy.format(price));
             sales.remove(pet.getUniqueId());
             buyQueue.remove(player.getUniqueId());
         } else {
             if(price > economy.getBalance(player.getName())) {
-                player.sendMessage(ChatColor.RED + "This animal costs " + economy.format(price)
+                player.sendMessage(errorColor + "This animal costs " + economy.format(price)
                         + ". You do not have enough funds for this purchase.");
             } else {
-                player.sendMessage(ChatColor.GOLD + "This animal costs " + economy.format(price)
+                player.sendMessage(notifyColor + "This animal costs " + economy.format(price)
                         + ". Right click the animal again to purchase.");
 
                 if(buyQueue.contains(player.getUniqueId())) {
@@ -204,36 +205,33 @@ public class PetStore extends JavaPlugin {
                     public void run() {
                         if(buyQueue.contains(player.getUniqueId())) {
                             sellQueue.remove(player.getUniqueId());
-                            player.sendMessage(ChatColor.BLUE + "Transaction timed out.");
+                            player.sendMessage(notifyColor + "Transaction timed out.");
                         }
                     }
-                }.runTaskLater(this, 100);
+                }.runTaskLater(this, timeout);
             }
         }
     }
 
-    private boolean checkOwner(Player player, Tameable animal) {
-        if(!animal.getOwner().equals(player)) {
-            player.sendMessage(ChatColor.RED + "You do not own that animal.");
-            return false;
-        }
-        return true;
-    }
-
     private class Handlers implements Listener {
         @EventHandler
-        private void onPlayerGiveTameable(PlayerInteractEntityEvent e) {
+        private void onPlayerTransferTameable(PlayerInteractEntityEvent e) {
             if(!(e.getRightClicked() instanceof Tameable) || !((Tameable)e.getRightClicked()).isTamed()) {
                 return;
             }
 
             Tameable pet = (Tameable)e.getRightClicked();
 
-            if(giveQueue.containsKey(e.getPlayer().getUniqueId())) {
-                if(checkOwner(e.getPlayer(), pet)) {
-                    giveAnimal(e.getPlayer(), pet);
+            if(transferQueue.containsKey(e.getPlayer().getUniqueId())) {
+                if(transferQueue.get(e.getPlayer().getUniqueId()) != null) {
+                    if(checkOwner(e.getPlayer(), pet)) {
+                        transferAnimal(e.getPlayer(), pet);
+                    } else {
+                        transferQueue.remove(e.getPlayer().getUniqueId());
+                    }
                 } else {
-                    giveQueue.remove(e.getPlayer().getUniqueId());
+                    give.add(((Entity)pet).getUniqueId());
+                    e.getPlayer().sendMessage(successColor + "The animal is now available to be claimed.");
                 }
                 e.setCancelled(true);
                 return;
@@ -251,7 +249,7 @@ public class PetStore extends JavaPlugin {
 
             if(sales.contains(((Entity) pet).getUniqueId())) {
                 if(pet.getOwner().equals(e.getPlayer())) {
-                    e.getPlayer().sendMessage(ChatColor.BLUE + "This animal has been listed for sale at "
+                    e.getPlayer().sendMessage(notifyColor + "This animal has been listed for sale at "
                             + economy.format(sales.get(((Entity)pet).getUniqueId())));
                 } else {
                     buyAnimal(e.getPlayer(), pet);

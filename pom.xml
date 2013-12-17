@@ -4,7 +4,7 @@
     <artifactId>PetStore</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>${project.artifactId}</name>
-    <description>A plugin that that allows you to give or sell tameable animals.</description>
+    <description>A plugin that that allows ownership management of tamable animals.</description>
     <url>http://dev.bukkit.org/bukkit-plugins/petstore</url>
 
     <properties>
