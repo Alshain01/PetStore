@@ -86,15 +86,4 @@ public final class CustomYML {
 					"Could not save config to " + customConfigFile, ex);
 		}
 	}
-
-	// Save a default config file to the data folder.
-	public void saveDefaultConfig() {
-		if (customConfigFile == null) {
-			customConfigFile = new File(plugin.getDataFolder(), dataFile);
-		}
-
-		if (!customConfigFile.exists()) {
-			plugin.saveResource(dataFile, false);
-		}
-	}
 }

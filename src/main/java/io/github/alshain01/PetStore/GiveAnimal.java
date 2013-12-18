@@ -1,6 +1,6 @@
 package io.github.alshain01.PetStore;
 
-import org.bukkit.configuration.serialization.ConfigurationSerializable;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Tameable;
@@ -33,7 +33,7 @@ public class GiveAnimal implements Listener {
         return sList;
     }
 
-    public void add(PetStore ps, final Player owner) {
+    public void add(final Player owner) {
         if(queue.contains(owner.getUniqueId())) {
             queue.remove(owner.getUniqueId());
         }
@@ -48,11 +48,18 @@ public class GiveAnimal implements Listener {
                     owner.sendMessage(PetStore.notifyColor + "Give animal timed out.");
                 }
             }
-        }.runTaskLater(ps, PetStore.timeout);
+        }.runTaskLater(Bukkit.getServer().getPluginManager().getPlugin("PetStore"), PetStore.timeout);
+    }
+
+    public void cancel(Player player, Entity entity) {
+        if(give.contains(entity.getUniqueId())) {
+            give.remove(entity.getUniqueId());
+            player.sendMessage(PetStore.successColor + "The animal is no longer being given away.");
+        }
     }
 
     @EventHandler
-    private void onPlayerInteractEntity(PlayerInteractEntityEvent e) {
+    private void onPlayerGiveAnimal(PlayerInteractEntityEvent e) {
         if(!(e.getRightClicked() instanceof Tameable) || !((Tameable)e.getRightClicked()).isTamed()) { return; }
 
         if(queue.contains(e.getPlayer().getUniqueId())) {
@@ -61,18 +68,18 @@ public class GiveAnimal implements Listener {
                 return;
             }
 
-            give.add(((Entity) e.getRightClicked()).getUniqueId());
+            give.add(e.getRightClicked().getUniqueId());
             e.setCancelled(true);
         }
 
-        if(give.contains(((Entity) e.getRightClicked()).getUniqueId())) {
+        if(give.contains(e.getRightClicked().getUniqueId())) {
             if(((Tameable)e.getRightClicked()).getOwner().equals(e.getPlayer())) {
                 e.getPlayer().sendMessage(PetStore.notifyColor + "This animal has been set to be given away.");
                 return;
             }
 
             if(claim.containsKey(e.getPlayer().getUniqueId())
-                    && claim.get(e.getPlayer().getUniqueId()).equals(((Entity) e.getRightClicked()).getUniqueId())) {
+                    && claim.get(e.getPlayer().getUniqueId()).equals(e.getRightClicked().getUniqueId())) {
                 ((Tameable)e.getRightClicked()).setOwner(e.getPlayer());
                 claim.remove(e.getPlayer().getUniqueId());
                 e.getPlayer().sendMessage(PetStore.successColor + "You have claimed this animal.");
@@ -81,7 +88,7 @@ public class GiveAnimal implements Listener {
             }
 
             e.getPlayer().sendMessage(PetStore.warnColor + "This animal is available.  Right click to claim it.");
-            claim.put(e.getPlayer().getUniqueId(), ((Entity)e.getRightClicked()).getUniqueId());
+            claim.put(e.getPlayer().getUniqueId(), e.getRightClicked().getUniqueId());
         }
     }
 }

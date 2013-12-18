@@ -1,12 +1,11 @@
 package io.github.alshain01.PetStore;
 
 import net.milkbowl.vault.economy.Economy;
-import net.milkbowl.vault.economy.EconomyResponse;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Tameable;
 import org.bukkit.event.EventHandler;
@@ -15,11 +14,9 @@ import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.entity.Entity;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class PetStore extends JavaPlugin {
     public static final long timeout = 100;
@@ -28,19 +25,11 @@ public class PetStore extends JavaPlugin {
     public static final ChatColor notifyColor = ChatColor.BLUE;
     public static final ChatColor successColor = ChatColor.GREEN;
 
-    private Economy economy = null;
     private TransferAnimal transfer = new TransferAnimal();
-    private GiveAnimal give;
-    private SellAnimal sales;
+    private GiveAnimal give = null;
+    private SellAnimal sales = null;
 
-    //<Owner, Cost>
-    //private ConcurrentHashMap<UUID, Double> sellQueue = new ConcurrentHashMap<UUID, Double>();
-
-    //<Buyer, Animal>
-    //private ConcurrentHashMap<UUID, UUID> buyQueue = new ConcurrentHashMap<UUID, UUID>();
-
-    //<Animal, Cost>
-    //private ConcurrentHashMap<UUID, Double> sales = new ConcurrentHashMap<UUID, Double>();
+    private Set<UUID> cancelQueue = new HashSet<UUID>();
 
     @Override
     public void onEnable() {
@@ -50,10 +39,12 @@ public class PetStore extends JavaPlugin {
         give = new GiveAnimal(yml.getConfig().getList("Give", new ArrayList<String>()));
 
         PluginManager pm = Bukkit.getPluginManager();
+        pm.registerEvents(new CancelListner(), this);
         pm.registerEvents(transfer, this);
         pm.registerEvents(give, this);
 
         // Initialize economy
+        Economy economy = null;
         if (Bukkit.getServer().getPluginManager().isPluginEnabled("Vault")) {
             final RegisteredServiceProvider<Economy> economyProvider = Bukkit
                 .getServer().getServicesManager()
@@ -66,7 +57,7 @@ public class PetStore extends JavaPlugin {
 
         // Read sales from file
         if(economy != null) {
-            sales = new SellAnimal(yml.getConfig().getMapList("Sales"));
+            sales = new SellAnimal(economy, yml.getConfig().getConfigurationSection("Sales").getValues(false));
             pm.registerEvents(sales, this);
         }
     }
@@ -79,9 +70,10 @@ public class PetStore extends JavaPlugin {
         yml.getConfig().set("Give", give.get());
 
         // Write sales to file
-        if(economy != null) {
-            yml.getConfig().set("Sales", sales.get());
+        if(sales != null) {
+            yml.getConfig().set("Sales", sales.serialize());
         }
+        yml.saveConfig();
     }
 
     @Override
@@ -93,10 +85,27 @@ public class PetStore extends JavaPlugin {
         if(!(sender instanceof Player)) {
             sender.sendMessage(errorColor + "PetStore commands may not be used from the console.");
         }
+        final Player player = (Player) sender;
+
+        if(args[0].equalsIgnoreCase("cancel")) {
+            if(!cancelQueue.contains(player.getUniqueId())) {
+                cancelQueue.add(player.getUniqueId());
+                new BukkitRunnable() {
+                    public void run() {
+                        if(cancelQueue.contains(player.getUniqueId())) {
+                            cancelQueue.remove(player.getUniqueId());
+                            player.sendMessage(notifyColor + "Cancel animal actions timed out.");
+                        }
+                    }
+                }.runTaskLater(Bukkit.getServer().getPluginManager().getPlugin("PetStore"), timeout);
+            }
+            sender.sendMessage(warnColor + "Right click the animal you wish to cancel give or sell actions on.");
+            return true;
+        }
 
         // Give command action
         if(args[0].equalsIgnoreCase("give")) {
-            give.add(this, (Player)sender);
+            give.add((Player)sender);
             return true;
         }
 
@@ -106,20 +115,20 @@ public class PetStore extends JavaPlugin {
 
         // Transfer command action
         if(args[0].equalsIgnoreCase("transfer")) {
-            Player player = Bukkit.getServer().getPlayer(args[1]);
-            if (player == null) {
-                sender.sendMessage(errorColor + "Player could not be found on the server.");
+            Player receiver = Bukkit.getServer().getPlayer(args[1]);
+            if (receiver == null) {
+                player.sendMessage(errorColor + "Player could not be found on the server.");
                 return false;
             }
 
-            transfer.add(this, (Player) sender, player);
+            transfer.add(player, receiver);
             return true;
         }
 
         // Sell command action
         if(args[0].equalsIgnoreCase("sell")) {
-            if(economy == null) {
-                sender.sendMessage("Vault is not configured on this server.");
+            if(sales == null) {
+                player.sendMessage("Vault is not configured on this server.");
                 return true;
             }
 
@@ -127,135 +136,30 @@ public class PetStore extends JavaPlugin {
             try {
                 price = Double.valueOf(args[1]);
             } catch (NumberFormatException e) {
-                sender.sendMessage(errorColor + "Please enter a valid price.");
+                player.sendMessage(errorColor + "Please enter a valid price.");
                 return true;
             }
 
-            sellQueue.put(((Player)sender).getUniqueId(), price);
-            sender.sendMessage(warnColor + "Right click the tamed animal you wish to sell.");
-            new BukkitRunnable() {
-                public void run() {
-                    if(sellQueue.contains(((Player) sender).getUniqueId())) {
-                        sellQueue.remove(((Player) sender).getUniqueId());
-                        sender.sendMessage(notifyColor + "Animal sell timed out.");
-                    }
-                }
-            }.runTaskLater(this, timeout);
+            sales.add(player, price);
         }
-
         return false;
     }
 
+    private class CancelListner implements Listener {
+        @EventHandler
+        private void onPlayerCancelAnimalActions(PlayerInteractEntityEvent e) {
+            Entity entity = e.getRightClicked();
+            if(!(entity instanceof Tameable) || !((Tameable)entity).isTamed()) { return; }
 
-
-    private void sellAnimal(Player player, Tameable animal) {
-        double cost = sellQueue.get(player.getUniqueId());
-        Entity pet = (Entity)animal;
-
-        if(cost >= 0) {
-            if(sales.contains(pet.getUniqueId())) {
-                sales.remove(pet.getUniqueId());
-            }
-            sales.put(pet.getUniqueId(), sellQueue.get(player.getUniqueId()));
-            player.sendMessage(notifyColor + "The animal has been listed for sale at " + economy.format(cost));
-        } else {
-            if(sales.contains(pet.getUniqueId())) {
-                sales.remove(pet.getUniqueId());
-                player.sendMessage(successColor + "The animal is no longer listed for sale.");
-            }
-        }
-        sellQueue.remove(player.getUniqueId());
-    }
-
-    private void buyAnimal(final Player player, Tameable animal) {
-        Entity pet = (Entity)animal;
-        double price = sales.get(pet.getUniqueId());
-
-        if(buyQueue.contains(player.getUniqueId())
-                && sales.get(player.getUniqueId()).equals(pet.getUniqueId())) {
-            EconomyResponse r = economy.withdrawPlayer(player.getName(), price);
-            if(r.transactionSuccess()) {
-                r = economy.depositPlayer(animal.getOwner().getName(), price);
-                if(!r.transactionSuccess()) {
-                    r = economy.depositPlayer(player.getName(), price);
-                    player.sendMessage(warnColor + "There was an error processing the transaction.");
+            Player player = e.getPlayer();
+            if(cancelQueue.contains(player.getUniqueId())) {
+                if(!Validate.owner(player, (Tameable)entity)) {
+                    cancelQueue.remove(player.getUniqueId());
                     return;
                 }
-            }
-            animal.setOwner(player);
-            player.sendMessage(successColor + "Transaction successful.");
-            player.sendMessage(successColor + player.getName()
-                    + " has purchased an animal for " + economy.format(price));
-            sales.remove(pet.getUniqueId());
-            buyQueue.remove(player.getUniqueId());
-        } else {
-            if(price > economy.getBalance(player.getName())) {
-                player.sendMessage(errorColor + "This animal costs " + economy.format(price)
-                        + ". You do not have enough funds for this purchase.");
-            } else {
-                player.sendMessage(notifyColor + "This animal costs " + economy.format(price)
-                        + ". Right click the animal again to purchase.");
-
-                if(buyQueue.contains(player.getUniqueId())) {
-                    buyQueue.remove(player.getUniqueId());
-                }
-
-                buyQueue.put(player.getUniqueId(), pet.getUniqueId());
-                new BukkitRunnable() {
-                    public void run() {
-                        if(buyQueue.contains(player.getUniqueId())) {
-                            sellQueue.remove(player.getUniqueId());
-                            player.sendMessage(notifyColor + "Transaction timed out.");
-                        }
-                    }
-                }.runTaskLater(this, timeout);
-            }
-        }
-    }
-
-    private class Handlers implements Listener {
-        @EventHandler
-        private void onPlayerTransferTameable(PlayerInteractEntityEvent e) {
-            if(!(e.getRightClicked() instanceof Tameable) || !((Tameable)e.getRightClicked()).isTamed()) {
-                return;
-            }
-
-            Tameable pet = (Tameable)e.getRightClicked();
-
-            if(transferQueue.containsKey(e.getPlayer().getUniqueId())) {
-                if(transferQueue.get(e.getPlayer().getUniqueId()) != null) {
-                    if(checkOwner(e.getPlayer(), pet)) {
-                        transferAnimal(e.getPlayer(), pet);
-                    } else {
-                        transferQueue.remove(e.getPlayer().getUniqueId());
-                    }
-                } else {
-                    give.add(((Entity)pet).getUniqueId());
-                    e.getPlayer().sendMessage(successColor + "The animal is now available to be claimed.");
-                }
-                e.setCancelled(true);
-                return;
-            }
-
-            if(sellQueue.containsKey(e.getPlayer().getUniqueId())) {
-                if(checkOwner(e.getPlayer(), pet)) {
-                    sellAnimal(e.getPlayer(), pet);
-                } else {
-                    sellQueue.remove(e.getPlayer().getUniqueId());
-                }
-                e.setCancelled(true);
-                return;
-            }
-
-            if(sales.contains(((Entity) pet).getUniqueId())) {
-                if(pet.getOwner().equals(e.getPlayer())) {
-                    e.getPlayer().sendMessage(notifyColor + "This animal has been listed for sale at "
-                            + economy.format(sales.get(((Entity)pet).getUniqueId())));
-                } else {
-                    buyAnimal(e.getPlayer(), pet);
-                }
-                e.setCancelled(true);
-                return;
+                give.cancel(player, entity);
+                sales.cancel(player, entity);
+                cancelQueue.remove(e.getPlayer().getUniqueId());
             }
         }
     }

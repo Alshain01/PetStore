@@ -17,7 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class TransferAnimal implements Listener {
     private Map<UUID, String> queue = new ConcurrentHashMap<UUID, String>();
 
-    public void add(PetStore ps, final Player owner, final Player receiver) {
+    public void add(final Player owner, final Player receiver) {
         if(queue.containsKey(owner.getUniqueId())) {
             queue.remove(owner.getUniqueId());
         }
@@ -31,7 +31,7 @@ public class TransferAnimal implements Listener {
                     owner.sendMessage(PetStore.notifyColor + "Transfer animal timed out.");
                 }
             }
-        }.runTaskLater(ps, PetStore.timeout);
+        }.runTaskLater(Bukkit.getServer().getPluginManager().getPlugin("PetStore"), PetStore.timeout);
     }
 
     private void transferAnimal(Player owner, Tameable animal) {
@@ -56,7 +56,7 @@ public class TransferAnimal implements Listener {
     }
 
     @EventHandler
-    private void onPlayerInteractEntity(PlayerInteractEntityEvent e) {
+    private void onPlayerTransferAnimal(PlayerInteractEntityEvent e) {
         if(queue.containsKey(e.getPlayer().getUniqueId())) {
             if(!(e.getRightClicked() instanceof Tameable) || !((Tameable)e.getRightClicked()).isTamed()) { return; }
 
