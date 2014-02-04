@@ -6,11 +6,11 @@ website: ${project.url}
 main: ${project.main}
 commands:
   ${project.name}:
-    description: ${project.name} command
-    permission: ${project.name}.Command
+    description: ${project.name} Command
+    permission: ${project.name}.command
     aliases: pet
-    usage: /${project.name} give <player> OR /${project.name} sell <price>
+    usage: /${project.name} <transfer|give|sell>
 permission:
-  ${project.name}.Command:
+  ${project.name}.command:
     description: Allows access to the ${project.name} command.
     default: op
