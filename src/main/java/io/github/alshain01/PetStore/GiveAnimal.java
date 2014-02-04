@@ -18,7 +18,7 @@ public class GiveAnimal implements Listener {
 
     // Holds a list of
     private Set<UUID> give = new HashSet<UUID>();
-    private Map<UUID, UUID> claim = new ConcurrentHashMap<UUID, UUID>();
+    private Map<UUID, UUID> claim = new HashMap<UUID, UUID>();
 
     public GiveAnimal(List<?> animals) {
         Set<UUID> uSet = new HashSet<UUID>();

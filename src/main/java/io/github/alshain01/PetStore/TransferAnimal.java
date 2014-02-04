@@ -10,12 +10,13 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.scheduler.BukkitRunnable;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class TransferAnimal implements Listener {
-    private Map<UUID, String> queue = new ConcurrentHashMap<UUID, String>();
+    private Map<UUID, String> queue = new HashMap<UUID, String>();
 
     public void add(final Player owner, final Player receiver) {
         if(queue.containsKey(owner.getUniqueId())) {
