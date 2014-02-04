@@ -52,7 +52,7 @@ public class TransferAnimal implements Listener {
                 + receiver.getName() + ".");
         receiver.sendMessage(PetStore.successColor + owner.getName()
                 + " has transferred ownership of an animal currently at "
-                + petLoc.getBlockX() + "," + petLoc.getBlockZ() + ".");
+                + petLoc.getBlockX() + ", " + petLoc.getBlockZ() + ".");
     }
 
     @EventHandler
