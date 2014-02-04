@@ -13,7 +13,10 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class GiveAnimal implements Listener {
+    // Holds a list of players who have used the give command
     private Set<UUID> queue = new HashSet<UUID>();
+
+    // Holds a list of
     private Set<UUID> give = new HashSet<UUID>();
     private Map<UUID, UUID> claim = new ConcurrentHashMap<UUID, UUID>();
 
@@ -61,27 +64,25 @@ public class GiveAnimal implements Listener {
     @EventHandler
     private void onPlayerGiveAnimal(PlayerInteractEntityEvent e) {
         if(!(e.getRightClicked() instanceof Tameable) || !((Tameable)e.getRightClicked()).isTamed()) { return; }
+        Tameable animal = (Tameable)e.getRightClicked();
+        Player player = e.getPlayer();
 
-        if(queue.contains(e.getPlayer().getUniqueId())) {
-            if(!Validate.owner(e.getPlayer(), (Tameable)e.getRightClicked())) {
-                queue.remove(e.getPlayer().getUniqueId());
-                return;
+        if(queue.contains(player.getUniqueId())) {
+            if(Validate.owner(player, animal)) {
+                give.add(e.getRightClicked().getUniqueId());
+                e.getPlayer().sendMessage(PetStore.notifyColor + "This animal has been set to be given away.");
+                e.setCancelled(true);
             }
-
-            give.add(e.getRightClicked().getUniqueId());
-            e.setCancelled(true);
+            queue.remove(e.getPlayer().getUniqueId());
+            return;
         }
 
         if(give.contains(e.getRightClicked().getUniqueId())) {
-            if(((Tameable)e.getRightClicked()).getOwner().equals(e.getPlayer())) {
-                e.getPlayer().sendMessage(PetStore.notifyColor + "This animal has been set to be given away.");
-                return;
-            }
-
             if(claim.containsKey(e.getPlayer().getUniqueId())
                     && claim.get(e.getPlayer().getUniqueId()).equals(e.getRightClicked().getUniqueId())) {
                 ((Tameable)e.getRightClicked()).setOwner(e.getPlayer());
                 claim.remove(e.getPlayer().getUniqueId());
+                give.remove(e.getRightClicked().getUniqueId());
                 e.getPlayer().sendMessage(PetStore.successColor + "You have claimed this animal.");
                 e.setCancelled(true);
                 return;
