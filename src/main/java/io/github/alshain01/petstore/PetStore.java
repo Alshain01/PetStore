@@ -73,12 +73,12 @@ public class PetStore extends JavaPlugin {
 
             pm.registerEvents(sales, this);
         }
-/*
+
         if (getConfig().getBoolean("Update.Check")) {
             new UpdateScheduler().runTaskTimer(this, 0, 1728000);
             getServer().getPluginManager().registerEvents(new UpdateListener(), this);
         }
-*/
+
 
         if(this.getConfig().getBoolean("Metrics.Enabled")) {
             try {
@@ -232,8 +232,8 @@ public class PetStore extends JavaPlugin {
             final String key = getConfig().getString("Update.ServerModsAPIKey");
             final Plugin plugin = Bukkit.getServer().getPluginManager().getPlugin("PetStore");
             updater = (getConfig().getBoolean("Update.Download"))
-                    ? new Updater(plugin, 0, getFile(), Updater.UpdateType.DEFAULT, key, true)
-                    : new Updater(plugin, 0, getFile(), Updater.UpdateType.NO_DOWNLOAD, key, false);
+                    ? new Updater(plugin, 70808, getFile(), Updater.UpdateType.DEFAULT, key, true)
+                    : new Updater(plugin, 70808, getFile(), Updater.UpdateType.NO_DOWNLOAD, key, false);
 
             if (updater.getResult() == UpdateResult.UPDATE_AVAILABLE) {
                 Bukkit.getServer().getConsoleSender()
