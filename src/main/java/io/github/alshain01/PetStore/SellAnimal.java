@@ -19,15 +19,19 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class SellAnimal implements Listener, ConfigurationSerializable {
     //<Owner, Cost>
-    private ConcurrentHashMap<UUID, Double> sellQueue = new ConcurrentHashMap<UUID, Double>();
+    private Map<UUID, Double> sellQueue = new HashMap<UUID, Double>();
 
     //<Buyer, Animal>
-    private ConcurrentHashMap<UUID, UUID> buyQueue = new ConcurrentHashMap<UUID, UUID>();
+    private Map<UUID, UUID> buyQueue = new HashMap<UUID, UUID>();
 
     //<Animal, Cost>
-    private ConcurrentHashMap<UUID, Double> sales = new ConcurrentHashMap<UUID, Double>();
+    private Map<UUID, Double> sales = new HashMap<UUID, Double>();
 
     private Economy economy;
+
+    public SellAnimal(Economy economy) {
+        this.economy = economy;
+    }
 
     public SellAnimal(Economy economy, Map<String, Object> map) {
         this.economy = economy;
@@ -46,11 +50,11 @@ public class SellAnimal implements Listener, ConfigurationSerializable {
     }
 
     public void add(final Player player, final double price) {
-        sales.put(player.getUniqueId(), price);
+        sellQueue.put(player.getUniqueId(), price);
         player.sendMessage(PetStore.warnColor + "Right click the tamed animal you wish to sell.");
         new BukkitRunnable() {
             public void run() {
-                if(sellQueue.contains(player.getUniqueId())) {
+                if(sellQueue.containsKey(player.getUniqueId())) {
                     sellQueue.remove(player.getUniqueId());
                     player.sendMessage(PetStore.notifyColor + "Sell animal timed out.");
                 }
@@ -69,14 +73,14 @@ public class SellAnimal implements Listener, ConfigurationSerializable {
         double cost = sellQueue.get(player.getUniqueId());
         Entity pet = (Entity)animal;
 
-        if(cost >= 0) {
-            if(sales.contains(pet.getUniqueId())) {
+        if(cost > 0D) {
+            if(sales.containsKey(pet.getUniqueId())) {
                 sales.remove(pet.getUniqueId());
             }
             sales.put(pet.getUniqueId(), sellQueue.get(player.getUniqueId()));
             player.sendMessage(PetStore.notifyColor + "The animal has been listed for sale at " + economy.format(cost));
         } else {
-            if(sales.contains(pet.getUniqueId())) {
+            if(sales.containsKey(pet.getUniqueId())) {
                 sales.remove(pet.getUniqueId());
                 player.sendMessage(PetStore.successColor + "The animal is no longer listed for sale.");
             }
@@ -88,7 +92,7 @@ public class SellAnimal implements Listener, ConfigurationSerializable {
         Entity pet = (Entity)animal;
         double price = sales.get(pet.getUniqueId());
 
-        if(buyQueue.contains(player.getUniqueId())
+        if(buyQueue.containsKey(player.getUniqueId())
                 && buyQueue.get(player.getUniqueId()).equals(pet.getUniqueId())) {
             EconomyResponse r = economy.withdrawPlayer(player.getName(), price);
             if(r.transactionSuccess()) {
@@ -113,14 +117,14 @@ public class SellAnimal implements Listener, ConfigurationSerializable {
                 player.sendMessage(PetStore.notifyColor + "This animal costs " + economy.format(price)
                         + ". Right click the animal again to purchase.");
 
-                if(buyQueue.contains(player.getUniqueId())) {
+                if(buyQueue.containsKey(player.getUniqueId())) {
                     buyQueue.remove(player.getUniqueId());
                 }
 
                 buyQueue.put(player.getUniqueId(), pet.getUniqueId());
                 new BukkitRunnable() {
                     public void run() {
-                        if(buyQueue.contains(player.getUniqueId())) {
+                        if(buyQueue.containsKey(player.getUniqueId())) {
                             sellQueue.remove(player.getUniqueId());
                             player.sendMessage(PetStore.notifyColor + "Transaction timed out.");
                         }
@@ -138,7 +142,7 @@ public class SellAnimal implements Listener, ConfigurationSerializable {
 
         Tameable pet = (Tameable)e.getRightClicked();
 
-        if(sales.contains(((Entity) pet).getUniqueId())) {
+        if(sales.containsKey(((Entity) pet).getUniqueId())) {
             if(pet.getOwner().equals(e.getPlayer())) {
                 e.getPlayer().sendMessage(PetStore.notifyColor + "This animal has been listed for sale at "
                     + economy.format(sales.get(((Entity) pet).getUniqueId())));

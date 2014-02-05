@@ -19,11 +19,11 @@ import org.bukkit.scheduler.BukkitRunnable;
 import java.util.*;
 
 public class PetStore extends JavaPlugin {
-    public static final long timeout = 100;
-    public static final ChatColor errorColor = ChatColor.RED;
-    public static final ChatColor warnColor = ChatColor.YELLOW;
-    public static final ChatColor notifyColor = ChatColor.BLUE;
-    public static final ChatColor successColor = ChatColor.GREEN;
+    public final static long timeout = 250;
+    public final static ChatColor errorColor = ChatColor.RED;
+    public final static ChatColor warnColor = ChatColor.YELLOW;
+    public final static ChatColor notifyColor = ChatColor.BLUE;
+    public final static ChatColor successColor = ChatColor.GREEN;
 
     private TransferAnimal transfer = new TransferAnimal();
     private GiveAnimal give = null;
@@ -57,7 +57,12 @@ public class PetStore extends JavaPlugin {
 
         // Read sales from file
         if(economy != null) {
-            sales = new SellAnimal(economy, yml.getConfig().getConfigurationSection("Sales").getValues(false));
+            if(yml.getConfig().isConfigurationSection("Sales")) {
+                sales = new SellAnimal(economy, yml.getConfig().getConfigurationSection("Sales").getValues(false));
+            } else {
+                sales = new SellAnimal(economy);
+            }
+
             pm.registerEvents(sales, this);
         }
     }
@@ -110,7 +115,14 @@ public class PetStore extends JavaPlugin {
         }
 
         if(args.length < 2) {
-            return false;
+            if(args[0].equalsIgnoreCase("sell")) {
+                sender.sendMessage("/petstore sell <price>");
+            }
+
+            if (args[0].equalsIgnoreCase("transfer")) {
+                sender.sendMessage("/petstore transfer <player>");
+            }
+            return true;
         }
 
         // Transfer command action
@@ -118,7 +130,7 @@ public class PetStore extends JavaPlugin {
             Player receiver = Bukkit.getServer().getPlayer(args[1]);
             if (receiver == null) {
                 player.sendMessage(errorColor + "Player could not be found on the server.");
-                return false;
+                return true;
             }
 
             transfer.add(player, receiver);
@@ -141,6 +153,7 @@ public class PetStore extends JavaPlugin {
             }
 
             sales.add(player, price);
+            return true;
         }
         return false;
     }
@@ -158,7 +171,9 @@ public class PetStore extends JavaPlugin {
                     return;
                 }
                 give.cancel(player, entity);
-                sales.cancel(player, entity);
+                if(sales != null) {
+                    sales.cancel(player, entity);
+                }
                 cancelQueue.remove(e.getPlayer().getUniqueId());
             }
         }

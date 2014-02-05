@@ -4,13 +4,14 @@ description: ${project.description}
 author: ${project.author}
 website: ${project.url}
 main: ${project.main}
+softdepend: [Vault]
 commands:
-  ${project.name}:
-    description: ${project.name} Command
-    permission: ${project.name}.command
+  petstore:
+    description: PetStore Command
+    permission: petstore.command
     aliases: pet
-    usage: /${project.name} <transfer|give|sell>
+    usage: /petstore <transfer|give|sell>
 permission:
-  ${project.name}.command:
-    description: Allows access to the ${project.name} command.
+  petstore.command:
+    description: Allows access to the PetStore command.
     default: op
