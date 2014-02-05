@@ -22,7 +22,7 @@
  http://creativecommons.org/licenses/by-nc/3.0/
  */
 
-package io.github.alshain01.PetStore;
+package io.github.alshain01.petstore;
 
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;

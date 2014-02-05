@@ -1,4 +1,4 @@
-package io.github.alshain01.PetStore;
+package io.github.alshain01.petstore;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;

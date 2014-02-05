@@ -1,4 +1,4 @@
-package io.github.alshain01.PetStore;
+package io.github.alshain01.petstore;
 
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.Bukkit;
