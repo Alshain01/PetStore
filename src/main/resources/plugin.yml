@@ -15,3 +15,6 @@ permission:
   petstore.command:
     description: Allows access to the PetStore command.
     default: op
+  petstore.admin.notifyupdate:
+    description: Notifies players when an update to PetStore is available.
+    default: op
