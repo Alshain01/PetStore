@@ -10,7 +10,7 @@ commands:
     description: PetStore Command
     permission: petstore.command
     aliases: pet
-    usage: /petstore <transfer | give | sell | release | cancel>
+    usage: /petstore <transfer | give | sell | release | tame | cancel>
 permission:
   petstore.command:
     description: Allows access to the PetStore base command.
@@ -43,6 +43,11 @@ permission:
   petstore.cancel:
     description: Allows access to the PetStore cancel command.
     default: true
+    children:
+      petstore.command: true
+  petstore.tame:
+    description: Allows access to the PetStore tame command.
+    default: op
     children:
       petstore.command: true
   petstore.admin.notifyupdate:

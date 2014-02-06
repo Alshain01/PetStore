@@ -37,6 +37,7 @@ public class PetStore extends JavaPlugin {
 
     private Set<UUID> cancelQueue = new HashSet<UUID>();
     private Set<UUID> releaseQueue = new HashSet<UUID>();
+    private Set<UUID> tameQueue = new HashSet<UUID>();
 
     @Override
     public void onEnable() {
@@ -166,8 +167,19 @@ public class PetStore extends JavaPlugin {
 
                 sales.add(player, price);
                 return true;
+            case TAME:
+                tameQueue.add(player.getUniqueId());
+                new BukkitRunnable() {
+                    public void run() {
+                        if(tameQueue.contains(player.getUniqueId())) {
+                            tameQueue.remove(player.getUniqueId());
+                            player.sendMessage(notifyColor + "Tame animal timed out.");
+                        }
+                    }
+                }.runTaskLater(this, timeout);
+                return true;
             case RELEASE:
-                releaseQueue.add(((Player) sender).getUniqueId());
+                releaseQueue.add(player.getUniqueId());
                 new BukkitRunnable() {
                     public void run() {
                         if(releaseQueue.contains(player.getUniqueId())) {
@@ -193,6 +205,35 @@ public class PetStore extends JavaPlugin {
                 return true;
             default:
                 return false;
+        }
+    }
+
+    private void tameAnimal(Player player, Tameable animal) {
+        if(animal instanceof Horse) {
+            ((Horse)animal).setDomestication(((Horse)animal).getMaxDomestication());
+        }
+
+        animal.setOwner(player);
+
+        if(animal instanceof Ocelot) {
+            int rand = (int)(Math.random()*3);
+            Ocelot.Type type;
+            switch (rand) {
+                case 1:
+                    type = Ocelot.Type.BLACK_CAT;
+                    break;
+                case 2:
+                    type = Ocelot.Type.SIAMESE_CAT;
+                    break;
+                default:
+                    type = Ocelot.Type.RED_CAT;
+            }
+            ((Ocelot)animal).setCatType(type);
+            ((Ocelot)animal).setSitting(true);
+        }
+
+        if(animal instanceof Wolf) {
+            ((Wolf)animal).setSitting(true);
         }
     }
 
@@ -222,25 +263,32 @@ public class PetStore extends JavaPlugin {
             Player player = e.getPlayer();
             Entity entity = e.getRightClicked();
 
-            if(!(entity instanceof Tameable) || !((Tameable)entity).isTamed()) { return; }
+            if(!(entity instanceof Tameable)) { return; }
 
-            if(cancelQueue.contains(player.getUniqueId())) {
-                if(Validate.owner(player, (Tameable)entity)) {
-                    give.cancel(player, entity);
-                    if(sales != null) {
-                        sales.cancel(player, entity);
+            if(((Tameable)entity).isTamed()) {
+                if(cancelQueue.contains(player.getUniqueId())) {
+                    if(Validate.owner(player, (Tameable)entity)) {
+                        give.cancel(player, entity);
+                        if(sales != null) {
+                            sales.cancel(player, entity);
+                        }
                     }
+
+                    cancelQueue.remove(player.getUniqueId());
+                    return;
                 }
 
-                cancelQueue.remove(player.getUniqueId());
-                return;
-            }
-
-            if(releaseQueue.contains(player.getUniqueId())) {
-                if(Validate.owner(player, (Tameable)entity)) {
-                    releaseAnimal((Tameable) entity);
+                if(releaseQueue.contains(player.getUniqueId())) {
+                    if(Validate.owner(player, (Tameable)entity)) {
+                        releaseAnimal((Tameable) entity);
+                    }
+                    releaseQueue.remove(player.getUniqueId());
                 }
-                releaseQueue.remove(player.getUniqueId());
+            } else {
+                if(tameQueue.contains(player.getUniqueId())) {
+                    tameAnimal(player, (Tameable)entity);
+                    tameQueue.remove(player.getUniqueId());
+                }
             }
 
         }

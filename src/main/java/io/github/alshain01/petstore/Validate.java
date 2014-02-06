@@ -11,10 +11,10 @@ import java.util.Set;
 
 public class Validate {
     public static boolean owner(Player player, Tameable animal) {
-        if(!animal.getOwner().equals(player)) {
-            player.sendMessage(PetStore.warnColor + "You do not own that animal.");
-            return false;
+        if(animal.isTamed() && (player.hasPermission("petstore.admin") || animal.getOwner().equals(player))) {
+            return true;
         }
-        return true;
+        player.sendMessage(PetStore.warnColor + "You do not own that animal.");
+        return false;
     }
 }
