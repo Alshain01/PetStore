@@ -7,6 +7,7 @@ import org.bukkit.entity.Tameable;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.*;
@@ -20,6 +21,9 @@ public class GiveAnimal implements Listener {
     private Set<UUID> give = new HashSet<UUID>();
     private Map<UUID, UUID> claim = new HashMap<UUID, UUID>();
 
+    /*
+     * Constructors
+     */
     public GiveAnimal(List<?> animals) {
         Set<UUID> uSet = new HashSet<UUID>();
         for(Object o : animals) {
@@ -36,6 +40,9 @@ public class GiveAnimal implements Listener {
         return sList;
     }
 
+    /*
+     * Public methods
+     */
     public void add(final Player owner) {
         if(queue.contains(owner.getUniqueId())) {
             queue.remove(owner.getUniqueId());
@@ -51,7 +58,7 @@ public class GiveAnimal implements Listener {
                     owner.sendMessage(PetStore.notifyColor + "Give animal timed out.");
                 }
             }
-        }.runTaskLater(Bukkit.getServer().getPluginManager().getPlugin("PetStore"), PetStore.timeout);
+        }.runTaskLater(getPlugin(), PetStore.timeout);
     }
 
     public void cancel(Player player, Entity entity) {
@@ -64,8 +71,8 @@ public class GiveAnimal implements Listener {
     @EventHandler
     private void onPlayerGiveAnimal(PlayerInteractEntityEvent e) {
         if(!(e.getRightClicked() instanceof Tameable) || !((Tameable)e.getRightClicked()).isTamed()) { return; }
-        Tameable animal = (Tameable)e.getRightClicked();
-        Player player = e.getPlayer();
+        final Tameable animal = (Tameable)e.getRightClicked();
+        final Player player = e.getPlayer();
 
         if(queue.contains(player.getUniqueId())) {
             if(Validate.owner(player, animal)) {
@@ -78,18 +85,30 @@ public class GiveAnimal implements Listener {
         }
 
         if(give.contains(e.getRightClicked().getUniqueId())) {
-            if(claim.containsKey(e.getPlayer().getUniqueId())
-                    && claim.get(e.getPlayer().getUniqueId()).equals(e.getRightClicked().getUniqueId())) {
-                ((Tameable)e.getRightClicked()).setOwner(e.getPlayer());
-                claim.remove(e.getPlayer().getUniqueId());
+            if(claim.containsKey(player.getUniqueId())
+                    && claim.get(player.getUniqueId()).equals(e.getRightClicked().getUniqueId())) {
+                animal.setOwner(player);
+                claim.remove(player.getUniqueId());
                 give.remove(e.getRightClicked().getUniqueId());
-                e.getPlayer().sendMessage(PetStore.successColor + "You have claimed this animal.");
+                player.sendMessage(PetStore.successColor + "You have claimed this animal.");
                 e.setCancelled(true);
                 return;
             }
 
-            e.getPlayer().sendMessage(PetStore.warnColor + "This animal is available.  Right click to claim it.");
+            player.sendMessage(PetStore.warnColor + "This animal is available.  Right click to claim it.");
             claim.put(e.getPlayer().getUniqueId(), e.getRightClicked().getUniqueId());
+            new BukkitRunnable() {
+                public void run() {
+                    if(claim.containsKey(player.getUniqueId())) {
+                        claim.remove(player.getUniqueId());
+                        player.sendMessage(PetStore.notifyColor + "Claim animal timed out.");
+                    }
+                }
+            }.runTaskLater(getPlugin(), PetStore.timeout);
         }
+    }
+
+    private Plugin getPlugin() {
+        return Bukkit.getServer().getPluginManager().getPlugin("PetStore");
     }
 }
