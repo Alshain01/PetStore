@@ -10,11 +10,41 @@ commands:
     description: PetStore Command
     permission: petstore.command
     aliases: pet
-    usage: /petstore <transfer|give|sell>
+    usage: /petstore <transfer | give | sell | release | cancel>
 permission:
   petstore.command:
-    description: Allows access to the PetStore command.
+    description: Allows access to the PetStore base command.
     default: true
+  petstore.cancel:
+    description: Allows access to the PetStore cancel command.
+    default: true
+  petstore.transfer:
+    description: Allows access to the PetStore transfer command.
+    default: true
+    children:
+      petstore.command: true
+  petstore.give:
+    description: Allows access to the PetStore give command.
+    default: true
+    children:
+      petstore.command: true
+      petstore.cancel: true
+  petstore.sell:
+    description: Allows access to the PetStore sell command.
+    default: true
+    children:
+      petstore.command: true
+      petstore.cancel: true
+  petstore.release:
+    description: Allows access to the PetStore release command.
+    default: true
+    children:
+      petstore.command: true
+  petstore.cancel:
+    description: Allows access to the PetStore cancel command.
+    default: true
+    children:
+      petstore.command: true
   petstore.admin.notifyupdate:
     description: Notifies players when an update to PetStore is available.
     default: op

@@ -3,15 +3,15 @@ package io.github.alshain01.petstore;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.Player;
-import org.bukkit.entity.Tameable;
+import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.RegisteredServiceProvider;
@@ -36,6 +36,7 @@ public class PetStore extends JavaPlugin {
     private Updater updater = null;
 
     private Set<UUID> cancelQueue = new HashSet<UUID>();
+    private Set<UUID> releaseQueue = new HashSet<UUID>();
 
     @Override
     public void onEnable() {
@@ -79,7 +80,6 @@ public class PetStore extends JavaPlugin {
             getServer().getPluginManager().registerEvents(new UpdateListener(), this);
         }
 
-
         if(this.getConfig().getBoolean("Metrics.Enabled")) {
             try {
                 new MetricsLite(this).start();
@@ -105,99 +105,144 @@ public class PetStore extends JavaPlugin {
 
     @Override
     public boolean onCommand(final CommandSender sender, Command cmd, String label, String[] args) {
+        // Check that it is our command and has the action
         if(!cmd.getName().equalsIgnoreCase("petstore") || args.length < 1) {
             return false;
         }
 
+        // All of the command require an animal entity to be identified
         if(!(sender instanceof Player)) {
             sender.sendMessage(errorColor + "PetStore commands may not be used from the console.");
         }
-        final Player player = (Player) sender;
 
-        if(args[0].equalsIgnoreCase("cancel")) {
-            if(!cancelQueue.contains(player.getUniqueId())) {
-                cancelQueue.add(player.getUniqueId());
+        final Player player = (Player) sender;
+        CommandAction action;
+
+        // Get the action.
+        try {
+            action = CommandAction.valueOf(args[0].toUpperCase());
+        } catch(IllegalArgumentException e) {
+            return false;
+        }
+
+        // Check that there are enough arguments
+        if(args.length < action.getTotalArgs()) {
+            player.sendMessage(action.getHelp());
+            return true;
+        }
+
+        // Check the permissions
+        if(!action.hasPermission(player)) {
+            player.sendMessage(PetStore.warnColor + "You do not have permission to use that command.");
+            return true;
+        }
+
+        // Perform the command
+        switch (action) {
+            case GIVE:
+                give.add((Player)sender);
+                return true;
+            case TRANSFER:
+                Player receiver = Bukkit.getServer().getPlayer(args[1]);
+                if (receiver == null) {
+                    player.sendMessage(errorColor + "Player could not be found on the server.");
+                } else {
+                    transfer.add(player, receiver);
+                }
+                return true;
+            case SELL:
+                if(sales == null) {
+                    player.sendMessage("Vault is not configured on this server.");
+                    return true;
+                }
+
+                Double price;
+                try {
+                    price = Double.valueOf(args[1]);
+                } catch (NumberFormatException e) {
+                    player.sendMessage(errorColor + "Please enter a valid price.");
+                    return true;
+                }
+
+                sales.add(player, price);
+                return true;
+            case RELEASE:
+                releaseQueue.add(((Player) sender).getUniqueId());
                 new BukkitRunnable() {
                     public void run() {
-                        if(cancelQueue.contains(player.getUniqueId())) {
-                            cancelQueue.remove(player.getUniqueId());
-                            player.sendMessage(notifyColor + "Cancel animal actions timed out.");
+                        if(releaseQueue.contains(player.getUniqueId())) {
+                            releaseQueue.remove(player.getUniqueId());
+                            player.sendMessage(notifyColor + "Release animal timed out.");
                         }
                     }
-                }.runTaskLater(Bukkit.getServer().getPluginManager().getPlugin("PetStore"), timeout);
-            }
-            sender.sendMessage(warnColor + "Right click the animal you wish to cancel give or sell actions on.");
-            return true;
-        }
-
-        // Give command action
-        if(args[0].equalsIgnoreCase("give")) {
-            give.add((Player)sender);
-            return true;
-        }
-
-        if(args.length < 2) {
-            if(args[0].equalsIgnoreCase("sell")) {
-                sender.sendMessage("/petstore sell <price>");
-            }
-
-            if (args[0].equalsIgnoreCase("transfer")) {
-                sender.sendMessage("/petstore transfer <player>");
-            }
-            return true;
-        }
-
-        // Transfer command action
-        if(args[0].equalsIgnoreCase("transfer")) {
-            Player receiver = Bukkit.getServer().getPlayer(args[1]);
-            if (receiver == null) {
-                player.sendMessage(errorColor + "Player could not be found on the server.");
+                }.runTaskLater(this, timeout);
                 return true;
-            }
+            case CANCEL:
+                if(!cancelQueue.contains(player.getUniqueId())) {
+                    cancelQueue.add(player.getUniqueId());
+                    new BukkitRunnable() {
+                        public void run() {
+                            if(cancelQueue.contains(player.getUniqueId())) {
+                                cancelQueue.remove(player.getUniqueId());
+                                player.sendMessage(notifyColor + "Cancel animal actions timed out.");
+                            }
+                        }
+                    }.runTaskLater(this, timeout);
+                }
+                sender.sendMessage(warnColor + "Right click the animal you wish to cancel give or sell actions on.");
+                return true;
+            default:
+                return false;
+        }
+    }
 
-            transfer.add(player, receiver);
-            return true;
+    private void releaseAnimal(Tameable animal) {
+        if(animal instanceof Ocelot) {
+            ((Ocelot)animal).setCatType(Ocelot.Type.WILD_OCELOT);
+            ((Ocelot)animal).setSitting(false);
         }
 
-        // Sell command action
-        if(args[0].equalsIgnoreCase("sell")) {
-            if(sales == null) {
-                player.sendMessage("Vault is not configured on this server.");
-                return true;
-            }
-
-            Double price;
-            try {
-                price = Double.valueOf(args[1]);
-            } catch (NumberFormatException e) {
-                player.sendMessage(errorColor + "Please enter a valid price.");
-                return true;
-            }
-
-            sales.add(player, price);
-            return true;
+        if(animal instanceof Wolf) {
+            ((Wolf)animal).setSitting(false);
         }
-        return false;
+
+        if(animal instanceof Horse) {
+            ((Horse)animal).setCarryingChest(false);
+            ((Horse)animal).getInventory().setArmor(new ItemStack(Material.AIR));
+            ((Horse)animal).getInventory().setSaddle(new ItemStack(Material.AIR));
+            ((Horse)animal).setDomestication(0);
+        }
+        ((LivingEntity)animal).setLeashHolder(null);
+        (animal).setOwner(null);
     }
 
     private class CancelListner implements Listener {
         @EventHandler
         private void onPlayerCancelAnimalActions(PlayerInteractEntityEvent e) {
+            Player player = e.getPlayer();
             Entity entity = e.getRightClicked();
+
             if(!(entity instanceof Tameable) || !((Tameable)entity).isTamed()) { return; }
 
-            Player player = e.getPlayer();
             if(cancelQueue.contains(player.getUniqueId())) {
-                if(!Validate.owner(player, (Tameable)entity)) {
-                    cancelQueue.remove(player.getUniqueId());
-                    return;
+                if(Validate.owner(player, (Tameable)entity)) {
+                    give.cancel(player, entity);
+                    if(sales != null) {
+                        sales.cancel(player, entity);
+                    }
                 }
-                give.cancel(player, entity);
-                if(sales != null) {
-                    sales.cancel(player, entity);
-                }
-                cancelQueue.remove(e.getPlayer().getUniqueId());
+
+                cancelQueue.remove(player.getUniqueId());
+                return;
             }
+
+            if(releaseQueue.contains(player.getUniqueId())) {
+                if(Validate.owner(player, (Tameable)entity)) {
+                    releaseAnimal((Tameable) entity);
+                }
+                releaseQueue.remove(player.getUniqueId());
+            }
+
         }
     }
 
@@ -215,7 +260,7 @@ public class PetStore extends JavaPlugin {
                             + "The version of PetStore that this server is running is out of date. "
                             + "Please consider updating to the latest version at dev.bukkit.org/bukkit-plugins/petstore/.");
                 } else if(updater.getResult() == UpdateResult.SUCCESS) {
-                    e.getPlayer().sendMessage("[PetStore] " + ChatColor.DARK_PURPLE
+                    e.getPlayer().sendMessage(ChatColor.DARK_PURPLE
                             + "An update to PetStore has been downloaded and will be installed when the server is reloaded.");
                 }
             }
