@@ -80,7 +80,7 @@ public class PetStore extends JavaPlugin {
 
         if(this.getConfig().getBoolean("Metrics.Enabled")) {
             try {
-                new MetricsLite(this).start();
+                new Metrics(this).start();
             } catch (IOException ex) {
                 this.getLogger().warning("Metrics failed to start.");
             }

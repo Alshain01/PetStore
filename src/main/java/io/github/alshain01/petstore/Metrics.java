@@ -1,50 +1,60 @@
 /*
- * Copyright 2011-2013 Tyler Blair. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without modification, are
- * permitted provided that the following conditions are met:
- *
- *    1. Redistributions of source code must retain the above copyright notice, this list of
- *       conditions and the following disclaimer.
- *
- *    2. Redistributions in binary form must reproduce the above copyright notice, this list
- *       of conditions and the following disclaimer in the documentation and/or other materials
- *       provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ''AS IS'' AND ANY EXPRESS OR IMPLIED
- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
- * FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHOR OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
- * ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
- * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- * The views and conclusions contained in the software and documentation are those of the
- * authors and contributors and should not be interpreted as representing official policies,
- * either expressed or implied, of anybody else.
- */
-
+* Copyright 2011-2013 Tyler Blair. All rights reserved.
+*
+* Redistribution and use in source and binary forms, with or without modification, are
+* permitted provided that the following conditions are met:
+*
+* 1. Redistributions of source code must retain the above copyright notice, this list of
+* conditions and the following disclaimer.
+*
+* 2. Redistributions in binary form must reproduce the above copyright notice, this list
+* of conditions and the following disclaimer in the documentation and/or other materials
+* provided with the distribution.
+*
+* THIS SOFTWARE IS PROVIDED BY THE AUTHOR ''AS IS'' AND ANY EXPRESS OR IMPLIED
+* WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+* FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHOR OR
+* CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+* CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+* SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+* ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+* NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+* ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*
+* The views and conclusions contained in the software and documentation are those of the
+* authors and contributors and should not be interpreted as representing official policies,
+* either expressed or implied, of anybody else.
+*/
 package io.github.alshain01.petstore;
 
-import org.bukkit.Bukkit;
-import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.plugin.Plugin;
-import org.bukkit.plugin.PluginDescriptionFile;
-import org.bukkit.scheduler.BukkitTask;
+        import org.bukkit.Bukkit;
+        import org.bukkit.configuration.InvalidConfigurationException;
+        import org.bukkit.configuration.file.YamlConfiguration;
+        import org.bukkit.plugin.Plugin;
+        import org.bukkit.plugin.PluginDescriptionFile;
+        import org.bukkit.scheduler.BukkitTask;
 
-import java.io.*;
-import java.net.Proxy;
-import java.net.URL;
-import java.net.URLConnection;
-import java.net.URLEncoder;
-import java.util.UUID;
-import java.util.logging.Level;
-import java.util.zip.GZIPOutputStream;
+        import java.io.BufferedReader;
+        import java.io.ByteArrayOutputStream;
+        import java.io.File;
+        import java.io.IOException;
+        import java.io.InputStreamReader;
+        import java.io.OutputStream;
+        import java.io.UnsupportedEncodingException;
+        import java.net.Proxy;
+        import java.net.URL;
+        import java.net.URLConnection;
+        import java.net.URLEncoder;
+        import java.util.Collections;
+        import java.util.HashSet;
+        import java.util.Iterator;
+        import java.util.LinkedHashSet;
+        import java.util.Set;
+        import java.util.UUID;
+        import java.util.logging.Level;
+        import java.util.zip.GZIPOutputStream;
 
-@SuppressWarnings("ALL")
-public class MetricsLite {
+public class Metrics {
 
     /**
      * The current revision number
@@ -64,12 +74,17 @@ public class MetricsLite {
     /**
      * Interval of time to ping (in minutes)
      */
-    private final static int PING_INTERVAL = 15;
+    private static final int PING_INTERVAL = 15;
 
     /**
      * The plugin this metrics submits for
      */
     private final Plugin plugin;
+
+    /**
+     * All of the custom graphs to submit to metrics
+     */
+    private final Set<Graph> graphs = Collections.synchronizedSet(new HashSet<Graph>());
 
     /**
      * The plugin configuration file
@@ -97,11 +112,11 @@ public class MetricsLite {
     private final Object optOutLock = new Object();
 
     /**
-     * Id of the scheduled task
+     * The scheduled task
      */
     private volatile BukkitTask task = null;
 
-    public MetricsLite(Plugin plugin) throws IOException {
+    public Metrics(final Plugin plugin) throws IOException {
         if (plugin == null) {
             throw new IllegalArgumentException("Plugin cannot be null");
         }
@@ -129,9 +144,44 @@ public class MetricsLite {
     }
 
     /**
-     * Start measuring statistics. This will immediately create an async repeating task as the plugin and send
-     * the initial data to the metrics backend, and then after that it will post in increments of
-     * PING_INTERVAL * 1200 ticks.
+     * Construct and create a Graph that can be used to separate specific plotters to their own graphs on the metrics
+     * website. Plotters can be added to the graph object returned.
+     *
+     * @param name The name of the graph
+     * @return Graph object created. Will never return NULL under normal circumstances unless bad parameters are given
+     */
+    public Graph createGraph(final String name) {
+        if (name == null) {
+            throw new IllegalArgumentException("Graph name cannot be null");
+        }
+
+        // Construct the graph object
+        final Graph graph = new Graph(name);
+
+        // Now we can add our graph
+        graphs.add(graph);
+
+        // and return back
+        return graph;
+    }
+
+    /**
+     * Add a Graph object to BukkitMetrics that represents data for the plugin that should be sent to the backend
+     *
+     * @param graph The name of the graph
+     */
+    public void addGraph(final Graph graph) {
+        if (graph == null) {
+            throw new IllegalArgumentException("Graph cannot be null");
+        }
+
+        graphs.add(graph);
+    }
+
+    /**
+     * Start measuring statistics. This will immediately create an async repeating task as the plugin and send the
+     * initial data to the metrics backend, and then after that it will post in increments of PING_INTERVAL * 1200
+     * ticks.
      *
      * @return True if statistics measuring is running, otherwise false.
      */
@@ -160,6 +210,10 @@ public class MetricsLite {
                             if (isOptOut() && task != null) {
                                 task.cancel();
                                 task = null;
+                                // Tell all plotters to stop gathering information.
+                                for (Graph graph : graphs) {
+                                    graph.onOptOut();
+                                }
                             }
                         }
 
@@ -190,8 +244,7 @@ public class MetricsLite {
      */
     public boolean isOptOut() {
         return false;
-        /*
-        synchronized (optOutLock) {
+        /*synchronized (optOutLock) {
             try {
                 // Reload the metrics file
                 configuration.load(getConfigFile());
@@ -207,8 +260,7 @@ public class MetricsLite {
                 return true;
             }
             return configuration.getBoolean("opt-out", false);
-        }
-        */
+        }*/
     }
 
     /**
@@ -274,7 +326,7 @@ public class MetricsLite {
     /**
      * Generic method that posts a plugin to the metrics website
      */
-    private void postPlugin(boolean isPing) throws IOException {
+    private void postPlugin(final boolean isPing) throws IOException {
         // Server software specific section
         PluginDescriptionFile description = plugin.getDescription();
         String pluginName = description.getName();
@@ -317,6 +369,46 @@ public class MetricsLite {
         // If we're pinging, append it
         if (isPing) {
             appendJSONPair(json, "ping", "1");
+        }
+
+        if (graphs.size() > 0) {
+            synchronized (graphs) {
+                json.append(',');
+                json.append('"');
+                json.append("graphs");
+                json.append('"');
+                json.append(':');
+                json.append('{');
+
+                boolean firstGraph = true;
+
+                final Iterator<Graph> iter = graphs.iterator();
+
+                while (iter.hasNext()) {
+                    Graph graph = iter.next();
+
+                    StringBuilder graphJson = new StringBuilder();
+                    graphJson.append('{');
+
+                    for (Plotter plotter : graph.getPlotters()) {
+                        appendJSONPair(graphJson, plotter.getColumnName(), Integer.toString(plotter.getValue()));
+                    }
+
+                    graphJson.append('}');
+
+                    if (!firstGraph) {
+                        json.append(',');
+                    }
+
+                    json.append(escapeJSON(graph.getName()));
+                    json.append(':');
+                    json.append(graphJson);
+
+                    firstGraph = false;
+                }
+
+                json.append('}');
+            }
         }
 
         // close json
@@ -375,6 +467,21 @@ public class MetricsLite {
             }
 
             throw new IOException(response);
+        } else {
+            // Is this the first update this hour?
+            if (response.equals("1") || response.contains("This is your first update this hour")) {
+                synchronized (graphs) {
+                    final Iterator<Graph> iter = graphs.iterator();
+
+                    while (iter.hasNext()) {
+                        final Graph graph = iter.next();
+
+                        for (Plotter plotter : graph.getPlotters()) {
+                            plotter.reset();
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -423,7 +530,7 @@ public class MetricsLite {
      * @param json
      * @param key
      * @param value
-     * @throws java.io.UnsupportedEncodingException
+     * @throws UnsupportedEncodingException
      */
     private static void appendJSONPair(StringBuilder json, String key, String value) throws UnsupportedEncodingException {
         boolean isValueNumeric = false;
@@ -507,4 +614,147 @@ public class MetricsLite {
         return URLEncoder.encode(text, "UTF-8");
     }
 
+    /**
+     * Represents a custom graph on the website
+     */
+    public static class Graph {
+
+        /**
+         * The graph's name, alphanumeric and spaces only :) If it does not comply to the above when submitted, it is
+         * rejected
+         */
+        private final String name;
+
+        /**
+         * The set of plotters that are contained within this graph
+         */
+        private final Set<Plotter> plotters = new LinkedHashSet<Plotter>();
+
+        private Graph(final String name) {
+            this.name = name;
+        }
+
+        /**
+         * Gets the graph's name
+         *
+         * @return the Graph's name
+         */
+        public String getName() {
+            return name;
+        }
+
+        /**
+         * Add a plotter to the graph, which will be used to plot entries
+         *
+         * @param plotter the plotter to add to the graph
+         */
+        public void addPlotter(final Plotter plotter) {
+            plotters.add(plotter);
+        }
+
+        /**
+         * Remove a plotter from the graph
+         *
+         * @param plotter the plotter to remove from the graph
+         */
+        public void removePlotter(final Plotter plotter) {
+            plotters.remove(plotter);
+        }
+
+        /**
+         * Gets an <b>unmodifiable</b> set of the plotter objects in the graph
+         *
+         * @return an unmodifiable {@link java.util.Set} of the plotter objects
+         */
+        public Set<Plotter> getPlotters() {
+            return Collections.unmodifiableSet(plotters);
+        }
+
+        @Override
+        public int hashCode() {
+            return name.hashCode();
+        }
+
+        @Override
+        public boolean equals(final Object object) {
+            if (!(object instanceof Graph)) {
+                return false;
+            }
+
+            final Graph graph = (Graph) object;
+            return graph.name.equals(name);
+        }
+
+        /**
+         * Called when the server owner decides to opt-out of BukkitMetrics while the server is running.
+         */
+        protected void onOptOut() {
+        }
+    }
+
+    /**
+     * Interface used to collect custom data for a plugin
+     */
+    public static abstract class Plotter {
+
+        /**
+         * The plot's name
+         */
+        private final String name;
+
+        /**
+         * Construct a plotter with the default plot name
+         */
+        public Plotter() {
+            this("Default");
+        }
+
+        /**
+         * Construct a plotter with a specific plot name
+         *
+         * @param name the name of the plotter to use, which will show up on the website
+         */
+        public Plotter(final String name) {
+            this.name = name;
+        }
+
+        /**
+         * Get the current value for the plotted point. Since this function defers to an external function it may or may
+         * not return immediately thus cannot be guaranteed to be thread friendly or safe. This function can be called
+         * from any thread so care should be taken when accessing resources that need to be synchronized.
+         *
+         * @return the current value for the point to be plotted.
+         */
+        public abstract int getValue();
+
+        /**
+         * Get the column name for the plotted point
+         *
+         * @return the plotted point's column name
+         */
+        public String getColumnName() {
+            return name;
+        }
+
+        /**
+         * Called after the website graphs have been updated
+         */
+        public void reset() {
+        }
+
+        @Override
+        public int hashCode() {
+            return getColumnName().hashCode();
+        }
+
+        @Override
+        public boolean equals(final Object object) {
+            if (!(object instanceof Plotter)) {
+                return false;
+            }
+
+            final Plotter plotter = (Plotter) object;
+            return plotter.name.equals(name) && plotter.getValue() == getValue();
+        }
+    }
 }
