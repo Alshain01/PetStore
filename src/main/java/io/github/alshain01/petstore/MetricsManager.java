@@ -6,7 +6,7 @@ import io.github.alshain01.petstore.Metrics.Graph;
 import java.io.IOException;
 
 public class MetricsManager {
-    public static void StartMetrics(final Plugin plugin) {
+    static void StartMetrics(final Plugin plugin) {
         try {
             final Metrics metrics = new Metrics(plugin);
 

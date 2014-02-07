@@ -53,6 +53,7 @@ package io.github.alshain01.petstore;
         import java.util.logging.Level;
         import java.util.zip.GZIPOutputStream;
 
+@SuppressWarnings("ALL")
 public class Metrics {
 
     /**

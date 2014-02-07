@@ -43,7 +43,7 @@ public final class CustomYML {
 	private File customConfigFile = null;
 
 	// Construct a new CustomYML file
-	protected CustomYML(JavaPlugin plugin, String dataFile) {
+	CustomYML(JavaPlugin plugin, String dataFile) {
         this.plugin = plugin;
 		this.dataFile = dataFile;
 	}

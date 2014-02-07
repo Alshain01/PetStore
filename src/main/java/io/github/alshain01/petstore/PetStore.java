@@ -20,15 +20,14 @@ import org.bukkit.scheduler.BukkitRunnable;
 
 import io.github.alshain01.petstore.Updater.UpdateResult;
 
-import java.io.IOException;
 import java.util.*;
 
 public class PetStore extends JavaPlugin {
     private TransferAnimal transfer;
-    protected GiveAnimal give = null;
-    protected SellAnimal sales = null;
+    GiveAnimal give = null;
+    SellAnimal sales = null;
     private Updater updater = null;
-    protected CustomYML message;
+    CustomYML message;
 
     private Set<UUID> cancelQueue = new HashSet<UUID>();
     private Set<UUID> releaseQueue = new HashSet<UUID>();
@@ -79,11 +78,7 @@ public class PetStore extends JavaPlugin {
         }
 
         if(this.getConfig().getBoolean("Metrics.Enabled")) {
-            try {
-                new Metrics(this).start();
-            } catch (IOException ex) {
-                this.getLogger().warning("Metrics failed to start.");
-            }
+            MetricsManager.StartMetrics(this);
         }
     }
 
@@ -245,7 +240,7 @@ public class PetStore extends JavaPlugin {
         return helpText.append(">").toString();
     }
 
-    protected static long getTimeout() {
+    static long getTimeout() {
        return Bukkit.getPluginManager().getPlugin("PetStore").getConfig().getLong("CommandTimeout");
     }
 
