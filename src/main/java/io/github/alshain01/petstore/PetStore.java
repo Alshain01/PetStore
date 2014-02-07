@@ -38,6 +38,7 @@ public class PetStore extends JavaPlugin {
         this.saveDefaultConfig();
         CustomYML yml = new CustomYML(this, "data.yml");
         message = new CustomYML(this, "message.yml");
+        message.saveDefaultConfig();
 
         // Initialize economy
         Economy economy = null;

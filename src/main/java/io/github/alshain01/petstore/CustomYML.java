@@ -35,8 +35,6 @@ import java.util.logging.Level;
 
 /**
  * Modified YAML manager from http://wiki.bukkit.org/Configuration_API_Reference
- * 
- * @author bukkit.org
  */
 public final class CustomYML {
 	private static JavaPlugin plugin;
@@ -50,7 +48,7 @@ public final class CustomYML {
 		this.dataFile = dataFile;
 	}
 
-	// Get's the custom config file.
+	// Gets the custom config file.
 	public FileConfiguration getConfig() {
 		if (customConfig == null) {
 			reload();
@@ -84,6 +82,17 @@ public final class CustomYML {
 		} catch (final IOException ex) {
 			plugin.getLogger().log(Level.SEVERE,
 					"Could not save config to " + customConfigFile, ex);
+		}
+	}
+
+	// Save a default config file to the data folder.
+	public void saveDefaultConfig() {
+		if (customConfigFile == null) {
+			customConfigFile = new File(plugin.getDataFolder(), dataFile);
+		}
+
+		if (!customConfigFile.exists()) {
+			plugin.saveResource(dataFile, false);
 		}
 	}
 }
