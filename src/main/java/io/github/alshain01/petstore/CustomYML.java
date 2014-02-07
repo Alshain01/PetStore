@@ -37,14 +37,14 @@ import java.util.logging.Level;
  * Modified YAML manager from http://wiki.bukkit.org/Configuration_API_Reference
  */
 public final class CustomYML {
-	private static JavaPlugin plugin;
+	private JavaPlugin plugin;
 	private final String dataFile;
 	private FileConfiguration customConfig = null;
 	private File customConfigFile = null;
 
 	// Construct a new CustomYML file
 	public CustomYML(JavaPlugin plugin, String dataFile) {
-		CustomYML.plugin = plugin;
+        this.plugin = plugin;
 		this.dataFile = dataFile;
 	}
 
