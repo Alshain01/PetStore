@@ -11,6 +11,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.permissions.Permissible;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.RegisteredServiceProvider;
@@ -118,7 +119,8 @@ public class PetStore extends JavaPlugin {
         try {
             action = CommandAction.valueOf(args[0].toUpperCase());
         } catch(IllegalArgumentException e) {
-            return false;
+            sender.sendMessage(getHelp(player));
+            return true;
         }
 
         // Check that there are enough arguments
@@ -214,7 +216,8 @@ public class PetStore extends JavaPlugin {
                 yml.saveConfig();
                 return true;
             default:
-                return false;
+                player.sendMessage(action.getHelp());
+                return true;
         }
     }
 
@@ -226,8 +229,23 @@ public class PetStore extends JavaPlugin {
         message.reload();
     }
 
-     protected static long getTimeout() {
-        return Bukkit.getPluginManager().getPlugin("PetStore").getConfig().getLong("CommandTimeout");
+    private String getHelp(Permissible player) {
+        StringBuilder helpText = new StringBuilder("/petstore <");
+        boolean first = true;
+        for(CommandAction a : CommandAction.values()) {
+            if(a.hasPermission(player)) {
+                if(a != CommandAction.SELL || sales != null) {
+                    if(!first) { helpText.append(" | "); }
+                    helpText.append(a.toString().toLowerCase());
+                    first = false;
+                }
+            }
+        }
+        return helpText.append(">").toString();
+    }
+
+    protected static long getTimeout() {
+       return Bukkit.getPluginManager().getPlugin("PetStore").getConfig().getLong("CommandTimeout");
     }
 
     private void tameAnimal(Player player, Tameable animal) {
