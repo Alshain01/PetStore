@@ -13,7 +13,6 @@ import org.bukkit.scheduler.BukkitRunnable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class TransferAnimal implements Listener {
     private Map<UUID, String> queue = new HashMap<UUID, String>();

@@ -11,7 +11,6 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class GiveAnimal implements Listener {
     // Holds a list of players who have used the give command
