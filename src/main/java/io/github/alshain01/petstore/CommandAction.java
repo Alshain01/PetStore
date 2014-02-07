@@ -7,8 +7,8 @@ public enum CommandAction {
     RELEASE(1, "release"), GIVE(1, "give"), CANCEL(1, "cancel"),
     TAME(1, "tame"), RELOAD(1, "reload"), SAVE(1, "save");
 
-    private int totalArgs;
-    private String help;
+    private final int totalArgs;
+    private final String help;
 
     CommandAction(int minArgs, String help) {
         totalArgs = minArgs;

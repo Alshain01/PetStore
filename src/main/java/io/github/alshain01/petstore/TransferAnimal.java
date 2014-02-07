@@ -8,6 +8,7 @@ import org.bukkit.entity.Tameable;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
+import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.HashMap;
@@ -15,36 +16,44 @@ import java.util.Map;
 import java.util.UUID;
 
 public class TransferAnimal implements Listener {
-    private Map<UUID, String> queue = new HashMap<UUID, String>();
+    private final JavaPlugin plugin;
+    private final Map<UUID, String> queue = new HashMap<UUID, String>();
+
+    TransferAnimal(JavaPlugin plugin) {
+        this.plugin = plugin;
+    }
 
     public void add(final Player owner, final Player receiver) {
-        if(queue.containsKey(owner.getUniqueId())) {
-            queue.remove(owner.getUniqueId());
+        final UUID pID = owner.getUniqueId();
+
+        if(queue.containsKey(pID)) {
+            queue.remove(pID);
         }
-        queue.put(owner.getUniqueId(), receiver.getName());
+        queue.put(pID, receiver.getName());
         owner.sendMessage(Message.TRANSFER_INSTRUCTION.get());
 
         new BukkitRunnable() {
             public void run() {
-                if(queue.containsKey(owner.getUniqueId())) {
-                    queue.remove(owner.getUniqueId());
+                if(queue.containsKey(pID)) {
+                    queue.remove(pID);
                     owner.sendMessage(Message.TRANSFER_TIMEOUT.get());
                 }
             }
-        }.runTaskLater(Bukkit.getServer().getPluginManager().getPlugin("PetStore"), PetStore.getTimeout());
+        }.runTaskLater(plugin, PetStore.getTimeout());
     }
 
-    private void transferAnimal(Player owner, Tameable animal) {
-        Player receiver = Bukkit.getServer().getPlayer(queue.get(owner.getUniqueId()));
+    private void transferAnimal(final Player owner, final Tameable animal) {
+        final UUID pID = owner.getUniqueId();
+        final Player receiver = Bukkit.getServer().getPlayer(queue.get(pID));
 
         if (receiver == null) {
             owner.sendMessage(Message.PLAYER_ERROR.get());
-            queue.remove(owner.getUniqueId());
+            queue.remove(pID);
             return;
         }
 
         animal.setOwner(receiver);
-        queue.remove(owner.getUniqueId());
+        queue.remove(pID);
 
         Location petLoc = ((Entity)animal).getLocation();
         owner.sendMessage(Message.TRANSFER_NOTIFY_OWNER.get().replaceAll("\\{Player\\}", receiver.getName()));
@@ -54,16 +63,19 @@ public class TransferAnimal implements Listener {
     }
 
     @EventHandler
-    private void onPlayerTransferAnimal(PlayerInteractEntityEvent e) {
-        if(queue.containsKey(e.getPlayer().getUniqueId())) {
-            if(!(e.getRightClicked() instanceof Tameable) || !((Tameable)e.getRightClicked()).isTamed()) { return; }
+    private void onPlayerTransferAnimal(final PlayerInteractEntityEvent e) {
+        final UUID pID = e.getPlayer().getUniqueId();
+        final Entity en = e.getRightClicked();
 
-            if(!Validate.owner(e.getPlayer(), (Tameable)e.getRightClicked())) {
-                queue.remove(e.getPlayer().getUniqueId());
+        if(queue.containsKey(pID)) {
+            if(Validate.isUntamedAnimal(en)) { return; }
+
+            if(!Validate.isOwner(e.getPlayer(), (Tameable) en)) {
+                queue.remove(pID);
                 return;
             }
 
-            transferAnimal(e.getPlayer(), (Tameable)e.getRightClicked());
+            transferAnimal(e.getPlayer(), (Tameable)en);
             e.setCancelled(true);
         }
     }

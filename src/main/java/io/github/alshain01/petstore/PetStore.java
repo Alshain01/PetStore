@@ -24,7 +24,7 @@ import java.io.IOException;
 import java.util.*;
 
 public class PetStore extends JavaPlugin {
-    private TransferAnimal transfer = new TransferAnimal();
+    private TransferAnimal transfer;
     private GiveAnimal give = null;
     private SellAnimal sales = null;
     private Updater updater = null;
@@ -54,7 +54,8 @@ public class PetStore extends JavaPlugin {
         }
 
         // Read give aways from file
-        give = new GiveAnimal(yml.getConfig().getList("Give", new ArrayList<String>()));
+        give = new GiveAnimal(this, yml.getConfig().getList("Give", new ArrayList<String>()));
+        transfer = new TransferAnimal(this);
 
         PluginManager pm = Bukkit.getPluginManager();
         pm.registerEvents(new CancelListner(), this);
@@ -64,9 +65,9 @@ public class PetStore extends JavaPlugin {
         // Read sales from file
         if(economy != null) {
             if(yml.getConfig().isConfigurationSection("Sales")) {
-                sales = new SellAnimal(economy, yml.getConfig().getConfigurationSection("Sales").getValues(false));
+                sales = new SellAnimal(this, economy, yml.getConfig().getConfigurationSection("Sales").getValues(false));
             } else {
-                sales = new SellAnimal(economy);
+                sales = new SellAnimal(this, economy);
             }
 
             pm.registerEvents(sales, this);
@@ -307,7 +308,7 @@ public class PetStore extends JavaPlugin {
 
             if(((Tameable)entity).isTamed()) {
                 if(cancelQueue.contains(player.getUniqueId())) {
-                    if(Validate.owner(player, (Tameable)entity)) {
+                    if(Validate.isOwner(player, (Tameable) entity)) {
                         give.cancel(player, entity);
                         if(sales != null) {
                             sales.cancel(player, entity);
@@ -319,7 +320,7 @@ public class PetStore extends JavaPlugin {
                 }
 
                 if(releaseQueue.contains(player.getUniqueId())) {
-                    if(Validate.owner(player, (Tameable)entity)) {
+                    if(Validate.isOwner(player, (Tameable) entity)) {
                         releaseAnimal((Tameable) entity);
                     }
                     releaseQueue.remove(player.getUniqueId());
