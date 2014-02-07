@@ -2,7 +2,6 @@ package io.github.alshain01.petstore;
 
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -199,34 +198,34 @@ public class PetStore extends JavaPlugin {
                 sender.sendMessage(Message.CANCEL_INSTRUCTION.get());
                 return true;
             case RELOAD:
-                reload();
+                this.reload();
                 return true;
             case SAVE:
-                save();
+                CustomYML yml = new CustomYML(this, "data.yml");
+
+                // Write give aways to file
+                yml.getConfig().set("Give", give.get());
+
+                // Write sales to file
+                if(sales != null) {
+                    yml.getConfig().set("Sales", sales.serialize());
+                }
+                yml.saveConfig();
                 return true;
             default:
                 return false;
         }
     }
 
-    private void save() {
-        CustomYML yml = new CustomYML(this, "data.yml");
-
-        // Write give aways to file
-        yml.getConfig().set("Give", give.get());
-
-        // Write sales to file
-        if(sales != null) {
-            yml.getConfig().set("Sales", sales.serialize());
-        }
-        yml.saveConfig();
-    }
-
     private void reload() {
-        this.reload();
+        cancelQueue = new HashSet<UUID>();
+        releaseQueue = new HashSet<UUID>();
+        tameQueue = new HashSet<UUID>();
+        this.reloadConfig();
+        message.reload();
     }
 
-    protected static long getTimeout() {
+     protected static long getTimeout() {
         return Bukkit.getPluginManager().getPlugin("PetStore").getConfig().getLong("CommandTimeout");
     }
 
