@@ -51,21 +51,21 @@ public class SellAnimal implements Listener, ConfigurationSerializable {
 
     public void add(final Player player, final double price) {
         sellQueue.put(player.getUniqueId(), price);
-        player.sendMessage(PetStore.warnColor + "Right click the tamed animal you wish to sell.");
+        player.sendMessage(Message.SELL_INSTRUCTION.get());
         new BukkitRunnable() {
             public void run() {
                 if(sellQueue.containsKey(player.getUniqueId())) {
                     sellQueue.remove(player.getUniqueId());
-                    player.sendMessage(PetStore.notifyColor + "Sell animal timed out.");
+                    player.sendMessage(Message.SELL_TIMEOUT.get());
                 }
             }
-        }.runTaskLater(Bukkit.getServer().getPluginManager().getPlugin("PetStore"), PetStore.timeout);
+        }.runTaskLater(Bukkit.getServer().getPluginManager().getPlugin("PetStore"), PetStore.getTimeout());
     }
 
     public void cancel(Player player, Entity entity) {
         if(sales.containsKey(entity.getUniqueId())) {
             sales.remove(entity.getUniqueId());
-            player.sendMessage(PetStore.successColor + "The animal is no longer for sale.");
+            player.sendMessage(Message.SELL_CANCEL.get());
         }
     }
 
@@ -78,11 +78,11 @@ public class SellAnimal implements Listener, ConfigurationSerializable {
                 sales.remove(pet.getUniqueId());
             }
             sales.put(pet.getUniqueId(), sellQueue.get(player.getUniqueId()));
-            player.sendMessage(PetStore.notifyColor + "The animal has been listed for sale at " + economy.format(cost));
+            player.sendMessage(Message.SELL_SET.get().replaceAll("\\{Price\\}", economy.format(cost)));
         } else {
             if(sales.containsKey(pet.getUniqueId())) {
                 sales.remove(pet.getUniqueId());
-                player.sendMessage(PetStore.successColor + "The animal is no longer listed for sale.");
+                player.sendMessage(Message.SELL_CANCEL.get());
             }
         }
         sellQueue.remove(player.getUniqueId());
@@ -99,23 +99,26 @@ public class SellAnimal implements Listener, ConfigurationSerializable {
                 r = economy.depositPlayer(animal.getOwner().getName(), price);
                 if(!r.transactionSuccess()) {
                     economy.depositPlayer(player.getName(), price);
-                    player.sendMessage(PetStore.warnColor + "There was an error processing the transaction.");
+                    player.sendMessage(Message.TRANSACTION_ERROR.get());
                     return;
                 }
             }
+
+            player.sendMessage(Message.BUY_NOTIFY_RECEIVER.get());
+            if(((Player)animal.getOwner()).isOnline()) {
+                player.sendMessage(Message.BUY_NOTIFY_OWNER.get()
+                        .replaceAll("\\{Player\\}", player.getName())
+                        .replaceAll("\\{Price\\}", economy.format(price)));
+            }
             animal.setOwner(player);
-            player.sendMessage(PetStore.successColor + "Transaction successful.");
-            player.sendMessage(PetStore.successColor + player.getName()
-                    + " has purchased an animal for " + economy.format(price));
             sales.remove(pet.getUniqueId());
             buyQueue.remove(player.getUniqueId());
         } else {
             if(price > economy.getBalance(player.getName())) {
-                player.sendMessage(PetStore.errorColor + "This animal costs " + economy.format(price)
-                        + ". You do not have enough funds for this purchase.");
+                player.sendMessage(Message.BUY_LOW_FUNDS.get().replaceAll("\\{Price\\}", economy.format(price)));
             } else {
-                player.sendMessage(PetStore.notifyColor + "This animal costs " + economy.format(price)
-                        + ". Right click the animal again to purchase.");
+                player.sendMessage(Message.BUY_INSTRUCTION.get()
+                        .replaceAll("\\{Price\\}", economy.format(price)));
 
                 if(buyQueue.containsKey(player.getUniqueId())) {
                     buyQueue.remove(player.getUniqueId());
@@ -126,10 +129,10 @@ public class SellAnimal implements Listener, ConfigurationSerializable {
                     public void run() {
                         if(buyQueue.containsKey(player.getUniqueId())) {
                             sellQueue.remove(player.getUniqueId());
-                            player.sendMessage(PetStore.notifyColor + "Transaction timed out.");
+                            player.sendMessage(Message.BUY_TIMEOUT.get());
                         }
                     }
-                }.runTaskLater(Bukkit.getServer().getPluginManager().getPlugin("PetStore"), PetStore.timeout);
+                }.runTaskLater(Bukkit.getServer().getPluginManager().getPlugin("PetStore"), PetStore.getTimeout());
             }
         }
     }
@@ -144,8 +147,8 @@ public class SellAnimal implements Listener, ConfigurationSerializable {
 
         if(sales.containsKey(((Entity) pet).getUniqueId())) {
             if(pet.getOwner().equals(e.getPlayer())) {
-                e.getPlayer().sendMessage(PetStore.notifyColor + "This animal has been listed for sale at "
-                    + economy.format(sales.get(((Entity) pet).getUniqueId())));
+                e.getPlayer().sendMessage(Message.SELL_SET.get()
+                        .replaceAll("\\{Price\\}", economy.format(sales.get(((Entity) pet).getUniqueId()))));
             } else {
                     buyAnimal(e.getPlayer(), pet);
             }

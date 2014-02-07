@@ -23,23 +23,23 @@ public class TransferAnimal implements Listener {
             queue.remove(owner.getUniqueId());
         }
         queue.put(owner.getUniqueId(), receiver.getName());
-        owner.sendMessage(PetStore.warnColor + "Right click the tamed animal you wish to transfer.");
+        owner.sendMessage(Message.TRANSFER_INSTRUCTION.get());
 
         new BukkitRunnable() {
             public void run() {
                 if(queue.containsKey(owner.getUniqueId())) {
                     queue.remove(owner.getUniqueId());
-                    owner.sendMessage(PetStore.notifyColor + "Transfer animal timed out.");
+                    owner.sendMessage(Message.TRANSFER_TIMEOUT.get());
                 }
             }
-        }.runTaskLater(Bukkit.getServer().getPluginManager().getPlugin("PetStore"), PetStore.timeout);
+        }.runTaskLater(Bukkit.getServer().getPluginManager().getPlugin("PetStore"), PetStore.getTimeout());
     }
 
     private void transferAnimal(Player owner, Tameable animal) {
         Player receiver = Bukkit.getServer().getPlayer(queue.get(owner.getUniqueId()));
 
         if (receiver == null) {
-            owner.sendMessage(PetStore.errorColor + "Player could not be found on the server.");
+            owner.sendMessage(Message.PLAYER_ERROR.get());
             queue.remove(owner.getUniqueId());
             return;
         }
@@ -48,12 +48,10 @@ public class TransferAnimal implements Listener {
         queue.remove(owner.getUniqueId());
 
         Location petLoc = ((Entity)animal).getLocation();
-        owner.sendMessage(PetStore.successColor
-                + "The animal ownership has been transferred to "
-                + receiver.getName() + ".");
-        receiver.sendMessage(PetStore.successColor + owner.getName()
-                + " has transferred ownership of an animal currently at "
-                + petLoc.getBlockX() + ", " + petLoc.getBlockZ() + ".");
+        owner.sendMessage(Message.TRANSFER_NOTIFY_OWNER.get().replaceAll("\\{Player\\}", receiver.getName()));
+        receiver.sendMessage(Message.TRANSFER_NOTIFY_RECEIVER.get()
+                .replaceAll("\\{Player\\}", owner.getName()
+                .replaceAll("\\{Location\\}",  petLoc.getBlockX() + ", " + petLoc.getBlockZ())));
     }
 
     @EventHandler

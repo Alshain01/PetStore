@@ -49,22 +49,22 @@ public class GiveAnimal implements Listener {
         }
 
         queue.add(owner.getUniqueId());
-        owner.sendMessage(PetStore.warnColor + "Right click the tamed animal you wish to give away.");
+        owner.sendMessage(Message.GIVE_INSTRUCTION.get());
 
         new BukkitRunnable() {
             public void run() {
                 if(queue.contains(owner.getUniqueId())) {
                     queue.remove(owner.getUniqueId());
-                    owner.sendMessage(PetStore.notifyColor + "Give animal timed out.");
+                    owner.sendMessage(Message.GIVE_TIMEOUT.get());
                 }
             }
-        }.runTaskLater(getPlugin(), PetStore.timeout);
+        }.runTaskLater(getPlugin(), PetStore.getTimeout());
     }
 
     public void cancel(Player player, Entity entity) {
         if(give.contains(entity.getUniqueId())) {
             give.remove(entity.getUniqueId());
-            player.sendMessage(PetStore.successColor + "The animal is no longer being given away.");
+            player.sendMessage(Message.GIVE_CANCEL.get());
         }
     }
 
@@ -77,7 +77,7 @@ public class GiveAnimal implements Listener {
         if(queue.contains(player.getUniqueId())) {
             if(Validate.owner(player, animal)) {
                 give.add(e.getRightClicked().getUniqueId());
-                e.getPlayer().sendMessage(PetStore.notifyColor + "This animal has been set to be given away.");
+                e.getPlayer().sendMessage(Message.GIVE_SET.get());
                 e.setCancelled(true);
             }
             queue.remove(e.getPlayer().getUniqueId());
@@ -90,21 +90,21 @@ public class GiveAnimal implements Listener {
                 animal.setOwner(player);
                 claim.remove(player.getUniqueId());
                 give.remove(e.getRightClicked().getUniqueId());
-                player.sendMessage(PetStore.successColor + "You have claimed this animal.");
+                player.sendMessage(Message.CLAIM_NOTIFY.get());
                 e.setCancelled(true);
                 return;
             }
 
-            player.sendMessage(PetStore.warnColor + "This animal is available.  Right click to claim it.");
+            player.sendMessage(Message.CLAIM_INSTRUCTION.get());
             claim.put(e.getPlayer().getUniqueId(), e.getRightClicked().getUniqueId());
             new BukkitRunnable() {
                 public void run() {
                     if(claim.containsKey(player.getUniqueId())) {
                         claim.remove(player.getUniqueId());
-                        player.sendMessage(PetStore.notifyColor + "Claim animal timed out.");
+                        player.sendMessage(Message.CLAIM_TIMEOUT.get());
                     }
                 }
-            }.runTaskLater(getPlugin(), PetStore.timeout);
+            }.runTaskLater(getPlugin(), PetStore.getTimeout());
         }
     }
 

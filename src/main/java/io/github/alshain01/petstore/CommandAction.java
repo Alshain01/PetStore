@@ -5,7 +5,7 @@ import org.bukkit.permissions.Permissible;
 public enum CommandAction {
     TRANSFER(2, "transfer <player>"), SELL(2, "sell <price>"),
     RELEASE(1, "release"), GIVE(1, "give"), CANCEL(1, "cancel"),
-    TAME(1, "tame");
+    TAME(1, "tame"), RELOAD(1, "reload"), SAVE(1, "save");
 
     private int totalArgs;
     private String help;

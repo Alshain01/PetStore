@@ -50,6 +50,16 @@ permission:
     default: op
     children:
       petstore.command: true
-  petstore.admin.notifyupdate:
+  petstore.save:
+    description: Allows access to the PetStore save command.
+    default: op
+    children:
+      petstore.command: true
+  petstore.reload:
+    description: Allows access to the PetStore reload command.
+    default: op
+    children:
+      petstore.command: true
+  petstore.notifyupdate:
     description: Notifies players when an update to PetStore is available.
     default: op

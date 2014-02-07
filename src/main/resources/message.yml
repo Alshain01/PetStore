@@ -1,0 +1,34 @@
+Message:
+  CONSOLE_ERROR: &cPetStore commands may not be used from the console.
+  COMMAND_ERROR: &cYou do not have permission to use that command.
+  PLAYER_ERROR: &cPlayer could not be found on the server.
+  VAULT_ERROR: &cVault is not configured on this server.
+  PRICE_ERROR: &cPlease enter a valid price.
+  OWNER_ERROR: &cYou do not own that animal.
+  TRANSACTION_ERROR: &cThere was an error processing the transaction.
+  TAME_TIMEOUT: &9Tame animal timed out.
+  RELEASE_TIMEOUT: &9Release animal timed out.
+  GIVE_TIMEOUT: &9Give animal timed out.
+  GIVE_CANCEL: &aThe animal is no longer being given away.
+  GIVE_SET: &aThis animal has been set to be given away.
+  GIVE_INSTRUCTION: &bRight click on the tamed animal you wish to give away.
+  CLAIM_TIMEOUT: &9Claim animal timed out.
+  CLAIM_NOTIFY: &gYou have claimed this animal.
+  CLAIM_INSTRUCTION: &bThis animal is available. Right click to claim it.
+  SELL_TIMEOUT: &9Sell animal timed out.
+  SELL_CANCEL: &aThe animal is no longer for sale.
+  SELL_SET: &aThe animal has been listed for sale at &6{Price}&a.
+  SELL_INSTRUCTION: &bRight click the tamed animal you wish to sell.
+  BUY_TIMEOUT: &9Transaction timed out.
+  BUY_LOW_FUNDS: &cThis animal costs &6{Price}&c. You do not have enough funds for this purchase.
+  BUY_NOTIFY_OWNER: &6{Player} &ahas purchased an animal for &6{Price}&a.
+  BUY_NOTIFY_RECEIVER: Transaction successful.
+  BUY_INSTRUCTION: &bThis animal costs &6{Price}&b. Right click the animal again to purchase.
+  CANCEL_TIMEOUT: &9Cancel animal actions timed out.
+  CANCEL_INSTRUCTION: &bRight click on the tamed animal you wish to cancel the status.
+  TRANSFER_TIMEOUT: &9Transfer animal timed out.
+  TRANSFER_NOTIFY_OWNER: &aThe animal ownership has been transferred to &6{Player}&a.
+  TRANSFER_NOTIFY_RECEIVER: &6{Player} &ahas transferred ownership of an animal currently at &6{Location}&a.
+  TRANSFER_INSTRUCTION: &bRight click the tamed animal you wish to transfer.
+  UPDATE_AVAILABLE: '&5The version of PetStore that this server is running is out of date.  Please consider updating to the latest version at dev.bukkit.org/bukkit-plugins/petstore/.'
+  UPDATE_DOWNLOADED: &5An update to PetStore has been downloaded and will be installed when the server is reloaded.

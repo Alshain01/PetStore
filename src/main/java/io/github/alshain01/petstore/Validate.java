@@ -14,7 +14,7 @@ public class Validate {
         if(animal.isTamed() && (player.hasPermission("petstore.admin") || animal.getOwner().equals(player))) {
             return true;
         }
-        player.sendMessage(PetStore.warnColor + "You do not own that animal.");
+        player.sendMessage(Message.OWNER_ERROR.get());
         return false;
     }
 }

@@ -24,16 +24,11 @@ import java.io.IOException;
 import java.util.*;
 
 public class PetStore extends JavaPlugin {
-    public static long timeout;
-    public final static ChatColor errorColor = ChatColor.RED;
-    public final static ChatColor warnColor = ChatColor.YELLOW;
-    public final static ChatColor notifyColor = ChatColor.BLUE;
-    public final static ChatColor successColor = ChatColor.GREEN;
-
     private TransferAnimal transfer = new TransferAnimal();
     private GiveAnimal give = null;
     private SellAnimal sales = null;
     private Updater updater = null;
+    protected CustomYML message;
 
     private Set<UUID> cancelQueue = new HashSet<UUID>();
     private Set<UUID> releaseQueue = new HashSet<UUID>();
@@ -43,15 +38,7 @@ public class PetStore extends JavaPlugin {
     public void onEnable() {
         this.saveDefaultConfig();
         CustomYML yml = new CustomYML(this, "data.yml");
-        timeout = this.getConfig().getLong("CommandTimeout");
-
-        // Read give aways from file
-        give = new GiveAnimal(yml.getConfig().getList("Give", new ArrayList<String>()));
-
-        PluginManager pm = Bukkit.getPluginManager();
-        pm.registerEvents(new CancelListner(), this);
-        pm.registerEvents(transfer, this);
-        pm.registerEvents(give, this);
+        message = new CustomYML(this, "message.yml");
 
         // Initialize economy
         Economy economy = null;
@@ -64,6 +51,14 @@ public class PetStore extends JavaPlugin {
                 economy = economyProvider.getProvider();
             }
         }
+
+        // Read give aways from file
+        give = new GiveAnimal(yml.getConfig().getList("Give", new ArrayList<String>()));
+
+        PluginManager pm = Bukkit.getPluginManager();
+        pm.registerEvents(new CancelListner(), this);
+        pm.registerEvents(transfer, this);
+        pm.registerEvents(give, this);
 
         // Read sales from file
         if(economy != null) {
@@ -113,7 +108,7 @@ public class PetStore extends JavaPlugin {
 
         // All of the command require an animal entity to be identified
         if(!(sender instanceof Player)) {
-            sender.sendMessage(errorColor + "PetStore commands may not be used from the console.");
+            sender.sendMessage(Message.CONSOLE_ERROR.get());
         }
 
         final Player player = (Player) sender;
@@ -134,7 +129,7 @@ public class PetStore extends JavaPlugin {
 
         // Check the permissions
         if(!action.hasPermission(player)) {
-            player.sendMessage(PetStore.warnColor + "You do not have permission to use that command.");
+            player.sendMessage(Message.COMMAND_ERROR.get());
             return true;
         }
 
@@ -146,14 +141,14 @@ public class PetStore extends JavaPlugin {
             case TRANSFER:
                 Player receiver = Bukkit.getServer().getPlayer(args[1]);
                 if (receiver == null) {
-                    player.sendMessage(errorColor + "Player could not be found on the server.");
+                    player.sendMessage(Message.PLAYER_ERROR.get());
                 } else {
                     transfer.add(player, receiver);
                 }
                 return true;
             case SELL:
                 if(sales == null) {
-                    player.sendMessage("Vault is not configured on this server.");
+                    player.sendMessage(Message.VAULT_ERROR.get());
                     return true;
                 }
 
@@ -161,7 +156,7 @@ public class PetStore extends JavaPlugin {
                 try {
                     price = Double.valueOf(args[1]);
                 } catch (NumberFormatException e) {
-                    player.sendMessage(errorColor + "Please enter a valid price.");
+                    player.sendMessage(Message.PRICE_ERROR.get());
                     return true;
                 }
 
@@ -173,10 +168,10 @@ public class PetStore extends JavaPlugin {
                     public void run() {
                         if(tameQueue.contains(player.getUniqueId())) {
                             tameQueue.remove(player.getUniqueId());
-                            player.sendMessage(notifyColor + "Tame animal timed out.");
+                            player.sendMessage(Message.TAME_TIMEOUT.get());
                         }
                     }
-                }.runTaskLater(this, timeout);
+                }.runTaskLater(this, getTimeout());
                 return true;
             case RELEASE:
                 releaseQueue.add(player.getUniqueId());
@@ -184,10 +179,10 @@ public class PetStore extends JavaPlugin {
                     public void run() {
                         if(releaseQueue.contains(player.getUniqueId())) {
                             releaseQueue.remove(player.getUniqueId());
-                            player.sendMessage(notifyColor + "Release animal timed out.");
+                            player.sendMessage(Message.RELEASE_TIMEOUT.get());
                         }
                     }
-                }.runTaskLater(this, timeout);
+                }.runTaskLater(this, getTimeout());
                 return true;
             case CANCEL:
                 if(!cancelQueue.contains(player.getUniqueId())) {
@@ -196,16 +191,43 @@ public class PetStore extends JavaPlugin {
                         public void run() {
                             if(cancelQueue.contains(player.getUniqueId())) {
                                 cancelQueue.remove(player.getUniqueId());
-                                player.sendMessage(notifyColor + "Cancel animal actions timed out.");
+                                player.sendMessage(Message.CANCEL_TIMEOUT.get());
                             }
                         }
-                    }.runTaskLater(this, timeout);
+                    }.runTaskLater(this, getTimeout());
                 }
-                sender.sendMessage(warnColor + "Right click the animal you wish to cancel give or sell actions on.");
+                sender.sendMessage(Message.CANCEL_INSTRUCTION.get());
+                return true;
+            case RELOAD:
+                reload();
+                return true;
+            case SAVE:
+                save();
                 return true;
             default:
                 return false;
         }
+    }
+
+    private void save() {
+        CustomYML yml = new CustomYML(this, "data.yml");
+
+        // Write give aways to file
+        yml.getConfig().set("Give", give.get());
+
+        // Write sales to file
+        if(sales != null) {
+            yml.getConfig().set("Sales", sales.serialize());
+        }
+        yml.saveConfig();
+    }
+
+    private void reload() {
+        this.reload();
+    }
+
+    protected static long getTimeout() {
+        return Bukkit.getPluginManager().getPlugin("PetStore").getConfig().getLong("CommandTimeout");
     }
 
     private void tameAnimal(Player player, Tameable animal) {
@@ -216,13 +238,13 @@ public class PetStore extends JavaPlugin {
         animal.setOwner(player);
 
         if(animal instanceof Ocelot) {
-            int rand = (int)(Math.random()*3);
+            int rand = (int)(Math.random()*2);
             Ocelot.Type type;
             switch (rand) {
-                case 1:
+                case 0:
                     type = Ocelot.Type.BLACK_CAT;
                     break;
-                case 2:
+                case 1:
                     type = Ocelot.Type.SIAMESE_CAT;
                     break;
                 default:
@@ -302,14 +324,11 @@ public class PetStore extends JavaPlugin {
         @EventHandler(ignoreCancelled = true)
         private void onPlayerJoin(PlayerJoinEvent e) {
             if(updater == null) { return; }
-            if (e.getPlayer().hasPermission("petstore.admin.notifyupdate")) {
+            if (e.getPlayer().hasPermission("petstore.notifyupdate")) {
                 if(updater.getResult() == Updater.UpdateResult.UPDATE_AVAILABLE) {
-                    e.getPlayer().sendMessage(ChatColor.DARK_PURPLE
-                            + "The version of PetStore that this server is running is out of date. "
-                            + "Please consider updating to the latest version at dev.bukkit.org/bukkit-plugins/petstore/.");
+                    e.getPlayer().sendMessage(Message.UPDATE_AVAILABLE.get());
                 } else if(updater.getResult() == UpdateResult.SUCCESS) {
-                    e.getPlayer().sendMessage(ChatColor.DARK_PURPLE
-                            + "An update to PetStore has been downloaded and will be installed when the server is reloaded.");
+                    e.getPlayer().sendMessage(Message.UPDATE_DOWNLOADED.get());
                 }
             }
         }
@@ -330,13 +349,10 @@ public class PetStore extends JavaPlugin {
 
             if (updater.getResult() == UpdateResult.UPDATE_AVAILABLE) {
                 Bukkit.getServer().getConsoleSender()
-                        .sendMessage("[PetStore] "	+ ChatColor.DARK_PURPLE
-                                + "The version of PetStore that this server is running is out of date. "
-                                + "Please consider updating to the latest version at dev.bukkit.org/bukkit-plugins/petstore/.");
+                        .sendMessage("[PetStore] " + Message.UPDATE_AVAILABLE.get());
             } else if (updater.getResult() == UpdateResult.SUCCESS) {
                 Bukkit.getServer().getConsoleSender()
-                        .sendMessage("[PetStore] "	+ ChatColor.DARK_PURPLE
-                                + "An update to PetStore has been downloaded and will be installed when the server is reloaded.");
+                        .sendMessage("[PetStore] "	+ Message.UPDATE_DOWNLOADED.get());
             }
         }
     }
