@@ -42,6 +42,10 @@ public class GiveAnimal implements Listener {
         return sList;
     }
 
+    public int getCount() {
+        return give.size();
+    }
+
     /*
      * Public methods
      */

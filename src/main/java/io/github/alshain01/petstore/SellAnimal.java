@@ -52,6 +52,10 @@ public class SellAnimal implements Listener, ConfigurationSerializable {
         return serialized;
     }
 
+    public int getCount() {
+        return sales.size();
+    }
+
     public void add(final Player player, final double price) {
         final UUID pID = player.getUniqueId();
 

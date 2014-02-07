@@ -25,8 +25,8 @@ import java.util.*;
 
 public class PetStore extends JavaPlugin {
     private TransferAnimal transfer;
-    private GiveAnimal give = null;
-    private SellAnimal sales = null;
+    protected GiveAnimal give = null;
+    protected SellAnimal sales = null;
     private Updater updater = null;
     protected CustomYML message;
 
