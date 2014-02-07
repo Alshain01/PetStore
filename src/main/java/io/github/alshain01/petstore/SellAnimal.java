@@ -15,7 +15,6 @@ import org.bukkit.scheduler.BukkitRunnable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class SellAnimal implements Listener, ConfigurationSerializable {
     //<Owner, Cost>
