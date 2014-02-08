@@ -63,7 +63,7 @@ public class PetStore extends JavaPlugin {
             getLogger().info("Enabling Flags Integration");
 
             // Connect to the data file and register the flags
-            Flags.getRegistrar().register(new ModuleYML(this, "flags.yml"), "RocketTeleport");
+            Flags.getRegistrar().register(new ModuleYML(this, "flags.yml"), this.getName());
             releaseFlag = Flags.getRegistrar().getFlag("ReleasePet");
         }
 
@@ -177,6 +177,7 @@ public class PetStore extends JavaPlugin {
                 return true;
             case TAME:
                 tameQueue.add(player.getUniqueId());
+                player.sendMessage(Message.TAME_INSTRUCTION.get());
                 new BukkitRunnable() {
                     public void run() {
                         if(tameQueue.contains(player.getUniqueId())) {
@@ -188,6 +189,7 @@ public class PetStore extends JavaPlugin {
                 return true;
             case RELEASE:
                 releaseQueue.add(player.getUniqueId());
+                player.sendMessage(Message.RELEASE_INSTRUCTION.get());
                 new BukkitRunnable() {
                     public void run() {
                         if(releaseQueue.contains(player.getUniqueId())) {
@@ -309,7 +311,7 @@ public class PetStore extends JavaPlugin {
     }
 
     private class CancelListner implements Listener {
-        @EventHandler(priority = EventPriority.HIGHEST)
+        @EventHandler(priority = EventPriority.HIGH)
         private void onPlayerCancelAnimalActions(PlayerInteractEntityEvent e) {
             Player player = e.getPlayer();
             Entity entity = e.getRightClicked();
@@ -317,6 +319,12 @@ public class PetStore extends JavaPlugin {
             if(!(entity instanceof Tameable)) { return; }
 
             if(((Tameable)entity).isTamed()) {
+                if(tameQueue.contains(player.getUniqueId())) {
+                    player.sendMessage(Message.TAME_ERROR.get());
+                    tameQueue.remove(player.getUniqueId());
+                    e.setCancelled(true);
+                }
+
                 if(cancelQueue.contains(player.getUniqueId())) {
                     if(Validate.isOwner(player, (Tameable) entity)) {
                         give.cancel(player, entity);
@@ -325,6 +333,7 @@ public class PetStore extends JavaPlugin {
                         }
                     }
 
+                    e.setCancelled(true);
                     cancelQueue.remove(player.getUniqueId());
                     return;
                 }
@@ -347,12 +356,14 @@ public class PetStore extends JavaPlugin {
                     if(Validate.isOwner(player, (Tameable) entity)) {
                         releaseAnimal((Tameable) entity);
                     }
+                    e.setCancelled(true);
                     releaseQueue.remove(player.getUniqueId());
                 }
             } else {
                 if(tameQueue.contains(player.getUniqueId())) {
                     tameAnimal(player, (Tameable)entity);
                     tameQueue.remove(player.getUniqueId());
+                    e.setCancelled(true);
                 }
             }
 

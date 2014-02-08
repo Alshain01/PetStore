@@ -4,7 +4,7 @@ description: ${project.description}
 author: ${project.author}
 website: ${project.url}
 main: ${project.main}
-softdepend: [Vault]
+softdepend: [Vault, Flags]
 commands:
   petstore:
     description: PetStore Command
