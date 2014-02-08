@@ -1,6 +1,9 @@
 package io.github.alshain01.petstore;
 
+import io.github.alshain01.flags.Flag;
 import io.github.alshain01.flags.Flags;
+import io.github.alshain01.flags.ModuleYML;
+import io.github.alshain01.flags.area.Area;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -8,6 +11,7 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -29,6 +33,7 @@ public class PetStore extends JavaPlugin {
     SellAnimal sales = null;
     private Updater updater = null;
     CustomYML message;
+    private Object releaseFlag  = null;
 
     private Set<UUID> cancelQueue = new HashSet<UUID>();
     private Set<UUID> releaseQueue = new HashSet<UUID>();
@@ -53,22 +58,17 @@ public class PetStore extends JavaPlugin {
             }
         }
 
-        Object salesFlag = null, giveFlag = null;
         //Initialize Flags
         if(Bukkit.getServer().getPluginManager().isPluginEnabled("Flags")) {
-            salesFlag = Flags.getRegistrar().register("PSSellAnimal",
-                    "Toggles players ability to sell animals in the area.", true, this.getName(),
-                    "&cYou are not allowed to sell animals in &6\\{Owner\\}&c's \\{AreaType\\}.",
-                    "&cYou are not allowed to sell animals in &6\\{World\\}&c.");
+            getLogger().info("Enabling Flags Integration");
 
-            giveFlag = Flags.getRegistrar().register("PSGiveAnimal",
-                    "Toggles players ability to give away animals in the area.", true, this.getName(),
-                    "&cYou are not allowed to give away animals in &6\\{Owner\\}&c's \\{AreaType\\}.",
-                    "&cYou are not allowed to give away animals in &6\\{World\\}&c.");
+            // Connect to the data file and register the flags
+            Flags.getRegistrar().register(new ModuleYML(this, "flags.yml"), "RocketTeleport");
+            releaseFlag = Flags.getRegistrar().getFlag("ReleasePet");
         }
 
         // Read give aways from file
-        give = new GiveAnimal(this, giveFlag, yml.getConfig().getList("Give", new ArrayList<String>()));
+        give = new GiveAnimal(this, yml.getConfig().getList("Give", new ArrayList<String>()));
         transfer = new TransferAnimal(this);
 
         PluginManager pm = Bukkit.getPluginManager();
@@ -79,9 +79,9 @@ public class PetStore extends JavaPlugin {
         // Read sales from file
         if(economy != null) {
             if(yml.getConfig().isConfigurationSection("Sales")) {
-                sales = new SellAnimal(this, economy, salesFlag, yml.getConfig().getConfigurationSection("Sales").getValues(false));
+                sales = new SellAnimal(this, economy, yml.getConfig().getConfigurationSection("Sales").getValues(false));
             } else {
-                sales = new SellAnimal(this, economy, salesFlag);
+                sales = new SellAnimal(this, economy);
             }
 
             pm.registerEvents(sales, this);
@@ -309,7 +309,7 @@ public class PetStore extends JavaPlugin {
     }
 
     private class CancelListner implements Listener {
-        @EventHandler
+        @EventHandler(priority = EventPriority.HIGHEST)
         private void onPlayerCancelAnimalActions(PlayerInteractEntityEvent e) {
             Player player = e.getPlayer();
             Entity entity = e.getRightClicked();
@@ -330,6 +330,20 @@ public class PetStore extends JavaPlugin {
                 }
 
                 if(releaseQueue.contains(player.getUniqueId())) {
+                    // Check the flag
+                    if(releaseFlag != null) {
+                        Flag flag = (Flag)releaseFlag;
+                        Area area = io.github.alshain01.flags.System.getActive().getAreaAt((e.getRightClicked().getLocation()));
+                        if(!area.getValue(flag, false)
+                                && (!player.hasPermission(flag.getBypassPermission())
+                                || !area.hasTrust(flag, player))) {
+                            player.sendMessage(area.getMessage(flag, player.getName()));
+                            releaseQueue.remove(player.getUniqueId());
+                            e.setCancelled(true);
+                            return;
+                        }
+                    }
+
                     if(Validate.isOwner(player, (Tameable) entity)) {
                         releaseAnimal((Tameable) entity);
                     }

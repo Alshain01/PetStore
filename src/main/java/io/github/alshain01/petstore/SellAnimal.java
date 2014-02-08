@@ -1,9 +1,11 @@
 package io.github.alshain01.petstore;
 
 import io.github.alshain01.flags.Flag;
+import io.github.alshain01.flags.Flags;
 import io.github.alshain01.flags.area.Area;
 import net.milkbowl.vault.economy.Economy;
 import net.milkbowl.vault.economy.EconomyResponse;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.entity.Entity;
@@ -33,18 +35,24 @@ public class SellAnimal implements Listener, ConfigurationSerializable {
 
     private final JavaPlugin plugin;
     private final Economy economy;
-    private final Object flag;
+    private Object flag = null;
 
-    public SellAnimal(final JavaPlugin plugin, final Economy economy, final Object flag) {
+    public SellAnimal(final JavaPlugin plugin, final Economy economy) {
         this.plugin = plugin;
         this.economy = economy;
-        this.flag = flag;
+        if(Bukkit.getServer().getPluginManager().isPluginEnabled("Flags")) {
+            this.flag = Flags.getRegistrar().getFlag("SellPet");
+        }
     }
 
-    public SellAnimal(final JavaPlugin plugin, final Economy economy, final Object flag, final Map<String, Object> map) {
+    public SellAnimal(final JavaPlugin plugin, final Economy economy, final Map<String, Object> map) {
         this.plugin = plugin;
         this.economy = economy;
-        this.flag = flag;
+
+        if(Bukkit.getServer().getPluginManager().isPluginEnabled("Flags")) {
+            this.flag = Flags.getRegistrar().getFlag("SellPet");
+        }
+
         for(String s : map.keySet()) {
             sales.put(UUID.fromString(s), (Double)map.get(s));
         }

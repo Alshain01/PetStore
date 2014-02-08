@@ -2,6 +2,7 @@ package io.github.alshain01.petstore;
 
 import io.github.alshain01.flags.*;
 import io.github.alshain01.flags.area.Area;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Tameable;
@@ -23,15 +24,17 @@ public class GiveAnimal implements Listener {
     // Holds a list of
     private final Set<UUID> give;
     private final Map<UUID, UUID> claim = new HashMap<UUID, UUID>();
-    private final Object flag;
+    private Object flag = null;
 
 
     /*
      * Constructors
      */
-    public GiveAnimal(final JavaPlugin plugin, final Object flag, final List<?> animals) {
+    public GiveAnimal(final JavaPlugin plugin, final List<?> animals) {
         this.plugin = plugin;
-        this.flag = flag;
+        if(Bukkit.getServer().getPluginManager().isPluginEnabled("Flags")) {
+            this.flag = Flags.getRegistrar().getFlag("GivePet");
+        }
 
         Set<UUID> uSet = new HashSet<UUID>();
         for(Object o : animals) {
