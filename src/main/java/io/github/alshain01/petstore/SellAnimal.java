@@ -1,16 +1,21 @@
 package io.github.alshain01.petstore;
 
+import io.github.alshain01.flags.Flag;
+import io.github.alshain01.flags.area.Area;
 import net.milkbowl.vault.economy.Economy;
 import net.milkbowl.vault.economy.EconomyResponse;
+import org.bukkit.Location;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Tameable;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
+import io.github.alshain01.flags.System;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -28,15 +33,18 @@ public class SellAnimal implements Listener, ConfigurationSerializable {
 
     private final JavaPlugin plugin;
     private final Economy economy;
+    private final Object flag;
 
-    public SellAnimal(final JavaPlugin plugin, final Economy economy) {
+    public SellAnimal(final JavaPlugin plugin, final Economy economy, final Object flag) {
         this.plugin = plugin;
         this.economy = economy;
+        this.flag = flag;
     }
 
-    public SellAnimal(final JavaPlugin plugin, final Economy economy, final Map<String, Object> map) {
+    public SellAnimal(final JavaPlugin plugin, final Economy economy, final Object flag, final Map<String, Object> map) {
         this.plugin = plugin;
         this.economy = economy;
+        this.flag = flag;
         for(String s : map.keySet()) {
             sales.put(UUID.fromString(s), (Double)map.get(s));
         }
@@ -146,7 +154,7 @@ public class SellAnimal implements Listener, ConfigurationSerializable {
         }
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGHEST)
     private void onPlayerSellAnimal(final PlayerInteractEntityEvent e) {
         if(Validate.isUntamedAnimal(e.getRightClicked())) { return; }
 
@@ -166,11 +174,25 @@ public class SellAnimal implements Listener, ConfigurationSerializable {
         }
 
         if(sellQueue.containsKey(pID)) {
-            if(Validate.isOwner(e.getPlayer(), pet)) {
+            Player player = e.getPlayer();
+            if(Validate.isOwner(player, pet)) {
+                // Check the flag
+                if(flag != null) {
+                    Flag salesFlag = (Flag)flag;
+                    Area area = System.getActive().getAreaAt(((Entity)pet).getLocation());
+                    if(!area.getValue(salesFlag, false)
+                            && (!player.hasPermission(salesFlag.getBypassPermission())
+                            || !area.hasTrust(salesFlag, player))) {
+                        player.sendMessage(area.getMessage(salesFlag, player.getName()));
+                        sellQueue.remove(pID);
+                        e.setCancelled(true);
+                        return;
+                    }
+                }
+                // Sell the animal
                 sellAnimal(e.getPlayer(), pet);
-            } else {
-                sellQueue.remove(pID);
             }
+            sellQueue.remove(pID);
             e.setCancelled(true);
         }
     }

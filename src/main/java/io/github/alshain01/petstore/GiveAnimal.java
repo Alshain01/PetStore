@@ -1,9 +1,12 @@
 package io.github.alshain01.petstore;
 
+import io.github.alshain01.flags.*;
+import io.github.alshain01.flags.area.Area;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Tameable;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -20,12 +23,15 @@ public class GiveAnimal implements Listener {
     // Holds a list of
     private final Set<UUID> give;
     private final Map<UUID, UUID> claim = new HashMap<UUID, UUID>();
+    private final Object flag;
+
 
     /*
      * Constructors
      */
-    public GiveAnimal(final JavaPlugin plugin, final List<?> animals) {
+    public GiveAnimal(final JavaPlugin plugin, final Object flag, final List<?> animals) {
         this.plugin = plugin;
+        this.flag = flag;
 
         Set<UUID> uSet = new HashSet<UUID>();
         for(Object o : animals) {
@@ -73,7 +79,7 @@ public class GiveAnimal implements Listener {
         }
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGHEST)
     private void onPlayerGiveAnimal(final PlayerInteractEntityEvent e) {
         if(Validate.isUntamedAnimal(e.getRightClicked())) { return; }
 
@@ -84,6 +90,21 @@ public class GiveAnimal implements Listener {
 
         if(queue.contains(pID)) {
             if(Validate.isOwner(player, animal)) {
+
+                // Check the flag
+                if(flag != null) {
+                    Flag giveFlag = (Flag)flag;
+                    Area area = io.github.alshain01.flags.System.getActive().getAreaAt(((Entity)animal).getLocation());
+                    if(!area.getValue(giveFlag, false)
+                            && (!player.hasPermission(giveFlag.getBypassPermission())
+                            || !area.hasTrust(giveFlag, player))) {
+                        player.sendMessage(area.getMessage(giveFlag, player.getName()));
+                        queue.remove(pID);
+                        e.setCancelled(true);
+                        return;
+                    }
+                }
+
                 give.add(aID);
                 player.sendMessage(Message.GIVE_SET.get());
                 e.setCancelled(true);

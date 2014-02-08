@@ -1,5 +1,6 @@
 package io.github.alshain01.petstore;
 
+import io.github.alshain01.flags.Flags;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -52,8 +53,22 @@ public class PetStore extends JavaPlugin {
             }
         }
 
+        Object salesFlag = null, giveFlag = null;
+        //Initialize Flags
+        if(Bukkit.getServer().getPluginManager().isPluginEnabled("Flags")) {
+            salesFlag = Flags.getRegistrar().register("PSSellAnimal",
+                    "Toggles players ability to sell animals in the area.", true, this.getName(),
+                    "&cYou are not allowed to sell animals in &6\\{Owner\\}&c's \\{AreaType\\}.",
+                    "&cYou are not allowed to sell animals in &6\\{World\\}&c.");
+
+            giveFlag = Flags.getRegistrar().register("PSGiveAnimal",
+                    "Toggles players ability to give away animals in the area.", true, this.getName(),
+                    "&cYou are not allowed to give away animals in &6\\{Owner\\}&c's \\{AreaType\\}.",
+                    "&cYou are not allowed to give away animals in &6\\{World\\}&c.");
+        }
+
         // Read give aways from file
-        give = new GiveAnimal(this, yml.getConfig().getList("Give", new ArrayList<String>()));
+        give = new GiveAnimal(this, giveFlag, yml.getConfig().getList("Give", new ArrayList<String>()));
         transfer = new TransferAnimal(this);
 
         PluginManager pm = Bukkit.getPluginManager();
@@ -64,9 +79,9 @@ public class PetStore extends JavaPlugin {
         // Read sales from file
         if(economy != null) {
             if(yml.getConfig().isConfigurationSection("Sales")) {
-                sales = new SellAnimal(this, economy, yml.getConfig().getConfigurationSection("Sales").getValues(false));
+                sales = new SellAnimal(this, economy, salesFlag, yml.getConfig().getConfigurationSection("Sales").getValues(false));
             } else {
-                sales = new SellAnimal(this, economy);
+                sales = new SellAnimal(this, economy, salesFlag);
             }
 
             pm.registerEvents(sales, this);

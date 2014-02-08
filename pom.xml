@@ -23,6 +23,11 @@
             <id>vault-repo</id>
             <url>http://ci.herocraftonline.com/plugin/repository/everything</url>
         </repository>
+
+        <repository>
+            <id>flags-repo</id>
+            <url>http://pages.suddenlink.net/alshain01/flags/repository</url>
+        </repository>
     </repositories>
 
     <dependencies>
@@ -37,6 +42,19 @@
             <artifactId>Vault</artifactId>
             <version>1.2.27</version>
             <optional>true</optional>
+        </dependency>
+
+        <dependency>
+            <groupId>io.github.alshain01.flags</groupId>
+            <artifactId>Flags</artifactId>
+            <version>RELEASE</version>
+            <optional>true</optional>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.bukkit</groupId>
+                    <artifactId>bukkit</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
 
