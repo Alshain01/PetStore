@@ -14,10 +14,10 @@ commands:
 permission:
   petstore.command:
     description: Allows access to the PetStore base command.
-    default: true
+    default: false
   petstore.cancel:
     description: Allows access to the PetStore cancel command.
-    default: true
+    default: false
   petstore.transfer:
     description: Allows access to the PetStore transfer command.
     default: true
@@ -37,11 +37,6 @@ permission:
       petstore.cancel: true
   petstore.release:
     description: Allows access to the PetStore release command.
-    default: true
-    children:
-      petstore.command: true
-  petstore.cancel:
-    description: Allows access to the PetStore cancel command.
     default: true
     children:
       petstore.command: true
