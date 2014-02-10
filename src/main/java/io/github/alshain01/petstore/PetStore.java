@@ -34,6 +34,7 @@ public class PetStore extends JavaPlugin {
     private Updater updater = null;
     CustomYML message;
     private Object releaseFlag  = null;
+    private static boolean economyEnabled = false;
 
     private Set<UUID> cancelQueue = new HashSet<UUID>();
     private Set<UUID> releaseQueue = new HashSet<UUID>();
@@ -55,6 +56,7 @@ public class PetStore extends JavaPlugin {
 
             if (economyProvider != null) {
                 economy = economyProvider.getProvider();
+                economyEnabled = true;
             }
         }
 
@@ -88,7 +90,8 @@ public class PetStore extends JavaPlugin {
         }
 
         if (getConfig().getBoolean("Update.Check")) {
-            new UpdateScheduler().runTaskTimer(this, 0, 1728000);
+            new UpdateScheduler().run();
+            new UpdateScheduler().runTaskTimer(this, 0, 1728000); // Run every 24 hours after the first time
             getServer().getPluginManager().registerEvents(new UpdateListener(), this);
         }
 
@@ -232,6 +235,10 @@ public class PetStore extends JavaPlugin {
                 player.sendMessage(action.getHelp());
                 return true;
         }
+    }
+
+    protected static boolean isEconomy() {
+        return economyEnabled;
     }
 
     private void reload() {
