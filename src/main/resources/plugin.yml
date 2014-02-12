@@ -11,7 +11,7 @@ commands:
     permission: petstore.command
     aliases: pet
     usage: /petstore <transfer | give | sell | release | tame | cancel>
-permission:
+permissions:
   petstore.command:
     description: Allows access to the PetStore base command.
     default: false

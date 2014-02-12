@@ -14,7 +14,7 @@ public class MetricsManager {
             transGraph.addPlotter(new Metrics.Plotter("For Sale") {
                 @Override
                 public int getValue() {
-                    return ((PetStore)plugin).sales.getCount();
+                    return ((PetStore)plugin).sales == null ? 0 : ((PetStore)plugin).sales.getCount();
                 }
             });
 

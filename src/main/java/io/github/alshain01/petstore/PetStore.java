@@ -117,8 +117,13 @@ public class PetStore extends JavaPlugin {
     @Override
     public boolean onCommand(final CommandSender sender, Command cmd, String label, String[] args) {
         // Check that it is our command and has the action
-        if(!cmd.getName().equalsIgnoreCase("petstore") || args.length < 1) {
+        if(!cmd.getName().equalsIgnoreCase("petstore")) {
             return false;
+        }
+
+        if (args.length < 1) {
+            sender.sendMessage(getHelp(sender));
+            return true;
         }
 
         // All of the command require an animal entity to be identified
