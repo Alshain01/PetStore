@@ -29,14 +29,13 @@ public class PetStore extends JavaPlugin {
     static CustomYML message;  // Static for enumeration access
     GiveAnimal give = null;
     SellAnimal sales = null;
-    TransferAnimal transfer;
 
-    Set<UUID> releaseQueue = new HashSet<UUID>();
-    Set<UUID> tameQueue = new HashSet<UUID>();
-    Set<UUID> cancelQueue = new HashSet<UUID>();
+    Map<UUID, PluginCommandType> commandQueue = new HashMap<UUID, PluginCommandType>();
+    Map<UUID, String> transferQueue = new HashMap<UUID, String>();
+    Map<UUID, Double> sellQueue = new HashMap<UUID, Double>();
 
     private Updater updater = null;
-    private Object releaseFlag  = null;
+    Object releaseFlag  = null;
 
     private static long timeout = 250;
     private static boolean economyEnabled = false;
@@ -72,11 +71,9 @@ public class PetStore extends JavaPlugin {
 
         // Read give aways from file
         give = new GiveAnimal(this, yml.getConfig().getList("Give", new ArrayList<String>()));
-        transfer = new TransferAnimal(this);
 
         PluginManager pm = Bukkit.getPluginManager();
-        pm.registerEvents(new CancelListner(), this);
-        pm.registerEvents(transfer, this);
+        pm.registerEvents(new AnimalListener(this), this);
         pm.registerEvents(give, this);
 
         // Read sales from file
@@ -109,7 +106,7 @@ public class PetStore extends JavaPlugin {
         CustomYML yml = new CustomYML(this, "data.yml");
 
         // Write give aways to file
-        yml.getConfig().set("Give", give.get());
+        yml.getConfig().set("Give", give.serialize());
 
         // Write sales to file
         if(sales != null) {
@@ -119,129 +116,20 @@ public class PetStore extends JavaPlugin {
         message = null;
     }
 
-    public static boolean isEconomy() {
-        return economyEnabled;
-    }
-
     void reload() {
-        cancelQueue = new HashSet<UUID>();
-        releaseQueue = new HashSet<UUID>();
-        tameQueue = new HashSet<UUID>();
+        commandQueue = new HashMap<UUID, PluginCommandType>();
+        transferQueue = new HashMap<UUID, String>();
+        sellQueue = new HashMap<UUID, Double>();
         this.reloadConfig();
         message.reload();
     }
 
+    public static boolean isEconomy() {
+        return economyEnabled;
+    }
+
     static long getTimeout() {
-       return timeout;
-    }
-
-    private void tameAnimal(Player player, Tameable animal) {
-        if(animal instanceof Horse) {
-            ((Horse)animal).setDomestication(((Horse)animal).getMaxDomestication());
-        }
-
-        animal.setOwner(player);
-
-        if(animal instanceof Ocelot) {
-            int rand = (int)(Math.random()*2);
-            Ocelot.Type type;
-            switch (rand) {
-                case 0:
-                    type = Ocelot.Type.BLACK_CAT;
-                    break;
-                case 1:
-                    type = Ocelot.Type.SIAMESE_CAT;
-                    break;
-                default:
-                    type = Ocelot.Type.RED_CAT;
-            }
-            ((Ocelot)animal).setCatType(type);
-            ((Ocelot)animal).setSitting(true);
-        }
-
-        if(animal instanceof Wolf) {
-            ((Wolf)animal).setSitting(true);
-        }
-    }
-
-    private void releaseAnimal(Tameable animal) {
-        if(animal instanceof Ocelot) {
-            ((Ocelot)animal).setCatType(Ocelot.Type.WILD_OCELOT);
-            ((Ocelot)animal).setSitting(false);
-        }
-
-        if(animal instanceof Wolf) {
-            ((Wolf)animal).setSitting(false);
-        }
-
-        if(animal instanceof Horse) {
-            ((Horse)animal).setCarryingChest(false);
-            ((Horse)animal).getInventory().setArmor(new ItemStack(Material.AIR));
-            ((Horse)animal).getInventory().setSaddle(new ItemStack(Material.AIR));
-            ((Horse)animal).setDomestication(0);
-        }
-        ((LivingEntity)animal).setLeashHolder(null);
-        (animal).setOwner(null);
-    }
-
-    private class CancelListner implements Listener {
-        @EventHandler(priority = EventPriority.HIGH)
-        private void onPlayerCancelAnimalActions(PlayerInteractEntityEvent e) {
-            Player player = e.getPlayer();
-            Entity entity = e.getRightClicked();
-
-            if(!(entity instanceof Tameable)) { return; }
-
-            if(((Tameable)entity).isTamed()) {
-                if(tameQueue.contains(player.getUniqueId())) {
-                    player.sendMessage(Message.TAME_ERROR.get());
-                    tameQueue.remove(player.getUniqueId());
-                    e.setCancelled(true);
-                }
-
-                if(cancelQueue.contains(player.getUniqueId())) {
-                    if(Validate.isOwner(player, (Tameable) entity)) {
-                        give.cancel(player, entity);
-                        if(sales != null) {
-                            sales.cancel(player, entity);
-                        }
-                    }
-
-                    e.setCancelled(true);
-                    cancelQueue.remove(player.getUniqueId());
-                    return;
-                }
-
-                if(releaseQueue.contains(player.getUniqueId())) {
-                    // Check the flag
-                    if(releaseFlag != null) {
-                        Flag flag = (Flag)releaseFlag;
-                        Area area = io.github.alshain01.flags.System.getActive().getAreaAt((e.getRightClicked().getLocation()));
-                        if(!area.getValue(flag, false)
-                                && (!player.hasPermission(flag.getBypassPermission())
-                                || !area.hasTrust(flag, player))) {
-                            player.sendMessage(area.getMessage(flag, player.getName()));
-                            releaseQueue.remove(player.getUniqueId());
-                            e.setCancelled(true);
-                            return;
-                        }
-                    }
-
-                    if(Validate.isOwner(player, (Tameable) entity)) {
-                        releaseAnimal((Tameable) entity);
-                    }
-                    e.setCancelled(true);
-                    releaseQueue.remove(player.getUniqueId());
-                }
-            } else {
-                if(tameQueue.contains(player.getUniqueId())) {
-                    tameAnimal(player, (Tameable)entity);
-                    tameQueue.remove(player.getUniqueId());
-                    e.setCancelled(true);
-                }
-            }
-
-        }
+        return timeout;
     }
 
     /*
@@ -293,5 +181,4 @@ public class PetStore extends JavaPlugin {
     public int getGiveCount() {
         return give.getCount();
     }
-
 }

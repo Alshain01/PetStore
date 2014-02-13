@@ -15,6 +15,10 @@ public enum PluginCommandType {
         this.help = help;
     }
 
+    public String getMessage() {
+        return Message.valueOf(this.toString()).get();
+    }
+
     public String getHelp() {
         return "/petstore " + help;
     }

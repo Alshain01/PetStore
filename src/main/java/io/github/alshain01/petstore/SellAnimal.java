@@ -24,7 +24,7 @@ import java.util.UUID;
 
 class SellAnimal implements Listener, ConfigurationSerializable {
     //<Owner, Cost>
-    private final Map<UUID, Double> sellQueue = new HashMap<UUID, Double>();
+    //private final Map<UUID, Double> sellQueue = new HashMap<UUID, Double>();
 
     //<Buyer, Animal>
     private final Map<UUID, UUID> buyQueue = new HashMap<UUID, UUID>();
@@ -32,11 +32,11 @@ class SellAnimal implements Listener, ConfigurationSerializable {
     //<Animal, Cost>
     private final Map<UUID, Double> sales = new HashMap<UUID, Double>();
 
-    private final JavaPlugin plugin;
+    private final PetStore plugin;
     private final Economy economy;
     private Object flag = null;
 
-    public SellAnimal(final JavaPlugin plugin, final Economy economy) {
+    public SellAnimal(final PetStore plugin, final Economy economy) {
         this.plugin = plugin;
         this.economy = economy;
         if(Bukkit.getServer().getPluginManager().isPluginEnabled("Flags")) {
@@ -44,7 +44,7 @@ class SellAnimal implements Listener, ConfigurationSerializable {
         }
     }
 
-    public SellAnimal(final JavaPlugin plugin, final Economy economy, final Map<String, Object> map) {
+    public SellAnimal(final PetStore plugin, final Economy economy, final Map<String, Object> map) {
         this.plugin = plugin;
         this.economy = economy;
 
@@ -70,12 +70,12 @@ class SellAnimal implements Listener, ConfigurationSerializable {
     public int getCount() {
         return sales.size();
     }
-
+/*
     public void add(final Player player, final double price) {
         final UUID pID = player.getUniqueId();
 
-        sellQueue.put(pID, price);
-        player.sendMessage(Message.CLICK_INSTRUCTION.get().replaceAll("\\{Action\\}", Message.GIVE.get().toLowerCase()));
+        plugin.sellQueue.put(pID, price);
+        player.sendMessage(Message.CLICK_INSTRUCTION.get().replaceAll("\\{Action\\}", Message.SELL.get().toLowerCase()));
         new BukkitRunnable() {
             public void run() {
                 if(sellQueue.containsKey(pID)) {
@@ -84,7 +84,7 @@ class SellAnimal implements Listener, ConfigurationSerializable {
                 }
             }
         }.runTaskLater(plugin, PetStore.getTimeout());
-    }
+    }*/
 
     public void cancel(final Player player, final Entity entity) {
         if(sales.containsKey(entity.getUniqueId())) {
@@ -96,11 +96,11 @@ class SellAnimal implements Listener, ConfigurationSerializable {
     private void sellAnimal(final Player player, final Tameable animal) {
         final UUID pID = player.getUniqueId();
         final UUID aID = ((Entity)animal).getUniqueId();
-        final double cost = sellQueue.get(pID);
+        final double cost = plugin.sellQueue.get(pID);
 
         if(cost > 0D) {
             if(sales.containsKey(aID)) { sales.remove(aID); }
-            sales.put(aID, sellQueue.get(pID));
+            sales.put(aID, plugin.sellQueue.get(pID));
             player.sendMessage(Message.SELL_SET.get().replaceAll("\\{Price\\}", economy.format(cost)));
         } else {
             if(sales.containsKey(aID)) {
@@ -108,7 +108,7 @@ class SellAnimal implements Listener, ConfigurationSerializable {
                 player.sendMessage(Message.SELL_CANCEL.get());
             }
         }
-        sellQueue.remove(pID);
+        plugin.sellQueue.remove(pID);
     }
 
     private void buyAnimal(final Player player, final Tameable animal) {
@@ -152,7 +152,7 @@ class SellAnimal implements Listener, ConfigurationSerializable {
                 new BukkitRunnable() {
                     public void run() {
                         if(buyQueue.containsKey(pID)) {
-                            sellQueue.remove(pID);
+                            plugin.sellQueue.remove(pID);
                             player.sendMessage(Message.TIMEOUT.get().replaceAll("\\{Action\\}", Message.BUY.get()));
                         }
                     }
@@ -163,7 +163,7 @@ class SellAnimal implements Listener, ConfigurationSerializable {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     private void onPlayerSellAnimal(final PlayerInteractEntityEvent e) {
-        if(Validate.isUntamedAnimal(e.getRightClicked())) { return; }
+        if(Animal.isUntamed(e.getRightClicked())) { return; }
 
         final UUID aID = (e.getRightClicked().getUniqueId());
         final UUID pID = (e.getPlayer().getUniqueId());
@@ -180,9 +180,9 @@ class SellAnimal implements Listener, ConfigurationSerializable {
             return;
         }
 
-        if(sellQueue.containsKey(pID)) {
+        if(plugin.sellQueue.containsKey(pID)) {
             Player player = e.getPlayer();
-            if(Validate.isOwner(player, pet)) {
+            if(Animal.isOwner(player, pet)) {
                 // Check the flag
                 if(flag != null) {
                     Flag salesFlag = (Flag)flag;
@@ -191,7 +191,7 @@ class SellAnimal implements Listener, ConfigurationSerializable {
                             && (!player.hasPermission(salesFlag.getBypassPermission())
                             || !area.hasTrust(salesFlag, player))) {
                         player.sendMessage(area.getMessage(salesFlag, player.getName()));
-                        sellQueue.remove(pID);
+                        plugin.sellQueue.remove(pID);
                         e.setCancelled(true);
                         return;
                     }
@@ -199,7 +199,7 @@ class SellAnimal implements Listener, ConfigurationSerializable {
                 // Sell the animal
                 sellAnimal(e.getPlayer(), pet);
             }
-            sellQueue.remove(pID);
+            plugin.sellQueue.remove(pID);
             e.setCancelled(true);
         }
     }

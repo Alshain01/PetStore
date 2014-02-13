@@ -5,7 +5,8 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.permissions.Permissible;
-import org.bukkit.scheduler.BukkitRunnable;
+
+import java.util.UUID;
 
 class PluginCommand implements CommandExecutor {
     private final PetStore plugin;
@@ -28,15 +29,9 @@ class PluginCommand implements CommandExecutor {
         }
 
         final Player player = (Player) sender;
-        PluginCommandType action;
-
-        // Get the action.
-        try {
-            action = PluginCommandType.valueOf(args[0].toUpperCase());
-        } catch(IllegalArgumentException e) {
-            sender.sendMessage(getHelp(player));
-            return true;
-        }
+        final UUID pID = player.getUniqueId();
+        final PluginCommandType action = getAction(args[0], player);
+        if(action == null) { return true; }
 
         // Check that there are enough arguments
         if(args.length < action.getTotalArgs()) {
@@ -53,14 +48,21 @@ class PluginCommand implements CommandExecutor {
         // Perform the command
         switch (action) {
             case GIVE:
-                plugin.give.add((Player)sender);
+            case TAME:
+            case RELEASE:
+            case CANCEL:
+                plugin.commandQueue.put(pID, action);
+                player.sendMessage(Message.CLICK_INSTRUCTION.get().replaceAll("\\{Action\\}", action.getMessage().toLowerCase()));
+                new TimeoutTask(plugin, action, player).runTaskLater(plugin, PetStore.getTimeout());
                 return true;
             case TRANSFER:
                 Player receiver = Bukkit.getServer().getPlayer(args[1]);
                 if (receiver == null) {
                     player.sendMessage(Message.PLAYER_ERROR.get());
                 } else {
-                    plugin.transfer.add(player, receiver);
+                    plugin.transferQueue.put(pID, receiver.getName());
+                    player.sendMessage(Message.CLICK_INSTRUCTION.get().replaceAll("\\{Action\\}", action.getMessage().toLowerCase()));
+                    new TimeoutTask(plugin, action, player).runTaskLater(plugin, PetStore.getTimeout());
                 }
                 return true;
             case SELL:
@@ -76,56 +78,18 @@ class PluginCommand implements CommandExecutor {
                     player.sendMessage(Message.PRICE_ERROR.get());
                     return true;
                 }
-
-                plugin.sales.add(player, price);
+                plugin.sellQueue.put(pID, price);
+                player.sendMessage(Message.CLICK_INSTRUCTION.get().replaceAll("\\{Action\\}", action.getMessage().toLowerCase()));
+                new TimeoutTask(plugin, action, player).runTaskLater(plugin, PetStore.getTimeout());
                 return true;
-            case TAME:
-                plugin.tameQueue.add(player.getUniqueId());
-                player.sendMessage(Message.CLICK_INSTRUCTION.get().replaceAll("\\{Action\\}", Message.TAME.get().toLowerCase()));
-                new BukkitRunnable() {
-                    public void run() {
-                        if(plugin.tameQueue.contains(player.getUniqueId())) {
-                            plugin.tameQueue.remove(player.getUniqueId());
-                            player.sendMessage(Message.TIMEOUT.get().replaceAll("\\{Action\\}", Message.TAME.get()));
-                        }
-                    }
-                }.runTaskLater(plugin, PetStore.getTimeout());
-                return true;
-            case RELEASE:
-                plugin.releaseQueue.add(player.getUniqueId());
-                player.sendMessage(Message.CLICK_INSTRUCTION.get().replaceAll("\\{Action\\}", Message.RELEASE.get().toLowerCase()));
-                new BukkitRunnable() {
-                    public void run() {
-                        if(plugin.releaseQueue.contains(player.getUniqueId())) {
-                            plugin.releaseQueue.remove(player.getUniqueId());
-                            player.sendMessage(Message.TIMEOUT.get().replaceAll("\\{Action\\}", Message.RELEASE.get()));
-                        }
-                    }
-                }.runTaskLater(plugin, PetStore.getTimeout());
-                return true;
-            case CANCEL:
-                if(!plugin.cancelQueue.contains(player.getUniqueId())) {
-                    sender.sendMessage(Message.CLICK_INSTRUCTION.get().replaceAll("\\{Action\\}", Message.CANCEL.get().toLowerCase()));
-                    plugin.cancelQueue.add(player.getUniqueId());
-                    new BukkitRunnable() {
-                        public void run() {
-                            if(plugin.cancelQueue.contains(player.getUniqueId())) {
-                                plugin.cancelQueue.remove(player.getUniqueId());
-                                player.sendMessage(Message.TIMEOUT.get().replaceAll("\\{Action\\}", Message.CANCEL.get()));
-                            }
-                        }
-                    }.runTaskLater(plugin, PetStore.getTimeout());
-                }
-
-                return true;
-            case RELOAD:
+             case RELOAD:
                 plugin.reload();
                 return true;
             case SAVE:
                 CustomYML yml = new CustomYML(plugin, "data.yml");
 
                 // Write give aways to file
-                yml.getConfig().set("Give", plugin.give.get());
+                yml.getConfig().set("Give", plugin.give.serialize());
 
                 // Write sales to file
                 if(plugin.sales != null) {
@@ -152,5 +116,14 @@ class PluginCommand implements CommandExecutor {
             }
         }
         return helpText.append(">").toString();
+    }
+
+    private PluginCommandType getAction(String action, Player player) {
+        try {
+            return PluginCommandType.valueOf(action.toUpperCase());
+        } catch(IllegalArgumentException e) {
+            player.sendMessage(getHelp(player));
+            return null;
+        }
     }
 }
