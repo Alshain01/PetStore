@@ -1,6 +1,5 @@
 package io.github.alshain01.petstore;
 
-import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 
 public enum Message {
@@ -15,7 +14,7 @@ public enum Message {
     TAME, RELEASE, GIVE, CLAIM, SELL, BUY, CANCEL, TRANSFER;
 
     public String get() {
-        String message = ((PetStore)Bukkit.getPluginManager().getPlugin("PetStore")).message.getConfig().getString("Message." + this.toString());
+        String message = PetStore.message.getConfig().getString("Message." + this.toString());
         return ChatColor.translateAlternateColorCodes('&', message);
     }
 }

@@ -26,7 +26,7 @@ import io.github.alshain01.petstore.Updater.UpdateResult;
 import java.util.*;
 
 public class PetStore extends JavaPlugin {
-    CustomYML message;
+    static CustomYML message;  // Static for enumeration access
     GiveAnimal give = null;
     SellAnimal sales = null;
     TransferAnimal transfer;
@@ -116,6 +116,7 @@ public class PetStore extends JavaPlugin {
             yml.getConfig().set("Sales", sales.serialize());
         }
         yml.saveConfig();
+        message = null;
     }
 
     public static boolean isEconomy() {
@@ -285,6 +286,7 @@ public class PetStore extends JavaPlugin {
     }
 
     public int getSalesCount() {
+        if(!isEconomy()) { return 0; }
         return sales.getCount();
     }
 

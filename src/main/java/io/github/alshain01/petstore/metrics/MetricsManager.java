@@ -10,10 +10,10 @@ public class MetricsManager {
         try {
             final Metrics metrics = new Metrics(plugin);
 
-            final Graph transGraph = metrics.createGraph("Animal Transactions");
+            Graph graph = metrics.createGraph("Animal Transactions");
 
             if(PetStore.isEconomy()) {
-                transGraph.addPlotter(new Metrics.Plotter("For Sale") {
+                graph.addPlotter(new Metrics.Plotter("For Sale") {
                     @Override
                     public int getValue() {
                         return plugin.getSalesCount();
@@ -21,7 +21,7 @@ public class MetricsManager {
                 });
             }
 
-            transGraph.addPlotter(new Metrics.Plotter("Give Away") {
+            graph.addPlotter(new Metrics.Plotter("Give Away") {
                 @Override
                 public int getValue() {
                     return plugin.getGiveCount();
@@ -31,23 +31,23 @@ public class MetricsManager {
             /*
 			 * Auto Update settings
 			 */
-            final Graph updateGraph = metrics.createGraph("Update Configuration");
+            graph = metrics.createGraph("Update Configuration");
             if (!plugin.getConfig().getBoolean("PetStore.Update.Check")) {
-                updateGraph.addPlotter(new Metrics.Plotter("No Updates") {
+                graph.addPlotter(new Metrics.Plotter("No Updates") {
                     @Override
                     public int getValue() {
                         return 1;
                     }
                 });
             } else if (!plugin.getConfig().getBoolean("PetStore.Update.Download")) {
-                updateGraph.addPlotter(new Metrics.Plotter("Check for Updates") {
+                graph.addPlotter(new Metrics.Plotter("Check for Updates") {
                     @Override
                     public int getValue() {
                         return 1;
                     }
                 });
             } else {
-                updateGraph.addPlotter(new Metrics.Plotter("Download Updates") {
+                graph.addPlotter(new Metrics.Plotter("Download Updates") {
                     @Override
                     public int getValue() {
                         return 1;
@@ -58,7 +58,8 @@ public class MetricsManager {
             /*
 			 * Economy Graph
 			 */
-            metrics.createGraph("Economy Enabled").addPlotter(new Metrics.Plotter(PetStore.isEconomy() ? "Yes" : "No") {
+            graph = metrics.createGraph("Economy Enabled");
+            graph.addPlotter(new Metrics.Plotter(PetStore.isEconomy() ? "Yes" : "No") {
                 @Override
                 public int getValue() {
                     return 1;
