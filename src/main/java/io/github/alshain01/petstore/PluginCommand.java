@@ -24,6 +24,7 @@ class PluginCommand implements CommandExecutor {
         // All of the command require an animal entity to be identified
         if(!(sender instanceof Player)) {
             sender.sendMessage(Message.CONSOLE_ERROR.get());
+            return true;
         }
 
         final Player player = (Player) sender;
@@ -80,41 +81,42 @@ class PluginCommand implements CommandExecutor {
                 return true;
             case TAME:
                 plugin.tameQueue.add(player.getUniqueId());
-                player.sendMessage(Message.TAME_INSTRUCTION.get());
+                player.sendMessage(Message.CLICK_INSTRUCTION.get().replaceAll("\\{Action\\}", Message.TAME.get().toLowerCase()));
                 new BukkitRunnable() {
                     public void run() {
                         if(plugin.tameQueue.contains(player.getUniqueId())) {
                             plugin.tameQueue.remove(player.getUniqueId());
-                            player.sendMessage(Message.TAME_TIMEOUT.get());
+                            player.sendMessage(Message.TIMEOUT.get().replaceAll("\\{Action\\}", Message.TAME.get()));
                         }
                     }
                 }.runTaskLater(plugin, PetStore.getTimeout());
                 return true;
             case RELEASE:
                 plugin.releaseQueue.add(player.getUniqueId());
-                player.sendMessage(Message.RELEASE_INSTRUCTION.get());
+                player.sendMessage(Message.CLICK_INSTRUCTION.get().replaceAll("\\{Action\\}", Message.RELEASE.get().toLowerCase()));
                 new BukkitRunnable() {
                     public void run() {
                         if(plugin.releaseQueue.contains(player.getUniqueId())) {
                             plugin.releaseQueue.remove(player.getUniqueId());
-                            player.sendMessage(Message.RELEASE_TIMEOUT.get());
+                            player.sendMessage(Message.TIMEOUT.get().replaceAll("\\{Action\\}", Message.RELEASE.get()));
                         }
                     }
                 }.runTaskLater(plugin, PetStore.getTimeout());
                 return true;
             case CANCEL:
                 if(!plugin.cancelQueue.contains(player.getUniqueId())) {
+                    sender.sendMessage(Message.CLICK_INSTRUCTION.get().replaceAll("\\{Action\\}", Message.CANCEL.get().toLowerCase()));
                     plugin.cancelQueue.add(player.getUniqueId());
                     new BukkitRunnable() {
                         public void run() {
                             if(plugin.cancelQueue.contains(player.getUniqueId())) {
                                 plugin.cancelQueue.remove(player.getUniqueId());
-                                player.sendMessage(Message.CANCEL_TIMEOUT.get());
+                                player.sendMessage(Message.TIMEOUT.get().replaceAll("\\{Action\\}", Message.CANCEL.get()));
                             }
                         }
                     }.runTaskLater(plugin, PetStore.getTimeout());
                 }
-                sender.sendMessage(Message.CANCEL_INSTRUCTION.get());
+
                 return true;
             case RELOAD:
                 plugin.reload();

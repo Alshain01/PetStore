@@ -63,13 +63,13 @@ class GiveAnimal implements Listener {
         if(!queue.contains(pID)) {
             queue.add(pID);
         }
-        owner.sendMessage(Message.GIVE_INSTRUCTION.get());
+        owner.sendMessage(Message.CLICK_INSTRUCTION.get().replaceAll("\\{Action\\}", Message.GIVE.get().toLowerCase()));
 
         new BukkitRunnable() {
             public void run() {
                 if(queue.contains(pID)) {
                     queue.remove(pID);
-                    owner.sendMessage(Message.GIVE_TIMEOUT.get());
+                    owner.sendMessage(Message.TIMEOUT.get().replaceAll("\\{Action\\}", Message.GIVE.get()));
                 }
             }
         }.runTaskLater(plugin, PetStore.getTimeout());
@@ -132,7 +132,7 @@ class GiveAnimal implements Listener {
                 public void run() {
                     if(claim.containsKey(pID)) {
                         claim.remove(pID);
-                        player.sendMessage(Message.CLAIM_TIMEOUT.get());
+                        player.sendMessage(Message.TIMEOUT.get().replaceAll("\\{Action\\}", Message.GIVE.get()));
                     }
                 }
             }.runTaskLater(plugin, PetStore.getTimeout());

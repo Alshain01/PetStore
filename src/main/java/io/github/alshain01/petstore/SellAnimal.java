@@ -75,12 +75,12 @@ class SellAnimal implements Listener, ConfigurationSerializable {
         final UUID pID = player.getUniqueId();
 
         sellQueue.put(pID, price);
-        player.sendMessage(Message.SELL_INSTRUCTION.get());
+        player.sendMessage(Message.CLICK_INSTRUCTION.get().replaceAll("\\{Action\\}", Message.GIVE.get().toLowerCase()));
         new BukkitRunnable() {
             public void run() {
                 if(sellQueue.containsKey(pID)) {
                     sellQueue.remove(pID);
-                    player.sendMessage(Message.SELL_TIMEOUT.get());
+                    player.sendMessage(Message.TIMEOUT.get().replaceAll("\\{Action\\}", Message.SELL.get()));
                 }
             }
         }.runTaskLater(plugin, PetStore.getTimeout());
@@ -153,7 +153,7 @@ class SellAnimal implements Listener, ConfigurationSerializable {
                     public void run() {
                         if(buyQueue.containsKey(pID)) {
                             sellQueue.remove(pID);
-                            player.sendMessage(Message.BUY_TIMEOUT.get());
+                            player.sendMessage(Message.TIMEOUT.get().replaceAll("\\{Action\\}", Message.BUY.get()));
                         }
                     }
                 }.runTaskLater(plugin, PetStore.getTimeout());

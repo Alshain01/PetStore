@@ -30,13 +30,13 @@ class TransferAnimal implements Listener {
             queue.remove(pID);
         }
         queue.put(pID, receiver.getName());
-        owner.sendMessage(Message.TRANSFER_INSTRUCTION.get());
+        owner.sendMessage(Message.CLICK_INSTRUCTION.get().replaceAll("\\{Action\\}", Message.TRANSFER.get().toLowerCase()));
 
         new BukkitRunnable() {
             public void run() {
                 if(queue.containsKey(pID)) {
                     queue.remove(pID);
-                    owner.sendMessage(Message.TRANSFER_TIMEOUT.get());
+                    owner.sendMessage(Message.TIMEOUT.get().replaceAll("\\{Action\\}", Message.TRANSFER.get()));
                 }
             }
         }.runTaskLater(plugin, PetStore.getTimeout());
