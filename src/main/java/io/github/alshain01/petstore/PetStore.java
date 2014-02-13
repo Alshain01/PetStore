@@ -27,15 +27,18 @@ import java.util.*;
 
 public class PetStore extends JavaPlugin {
     static CustomYML message;  // Static for enumeration access
+    Economy economy;
     GiveAnimal give = null;
-    SellAnimal sales = null;
+    //SellAnimal sales = null;
 
     Map<UUID, PluginCommandType> commandQueue = new HashMap<UUID, PluginCommandType>();
     Map<UUID, String> transferQueue = new HashMap<UUID, String>();
     Map<UUID, Double> sellQueue = new HashMap<UUID, Double>();
+    Map<UUID, UUID> buyQueue = new HashMap<UUID, UUID>();
+    Map<String, Object> flags = new HashMap<String, Object>();
+    Map<UUID, Double> forSale = null;
 
     private Updater updater = null;
-    Object releaseFlag  = null;
 
     private static long timeout = 250;
     private static boolean economyEnabled = false;
@@ -48,7 +51,6 @@ public class PetStore extends JavaPlugin {
         message.saveDefaultConfig();
 
         // Initialize economy
-        Economy economy = null;
         if (Bukkit.getServer().getPluginManager().isPluginEnabled("Vault")) {
             final RegisteredServiceProvider<Economy> economyProvider = Bukkit
                 .getServer().getServicesManager()
@@ -65,8 +67,11 @@ public class PetStore extends JavaPlugin {
             getLogger().info("Enabling Flags Integration");
 
             // Connect to the data file and register the flags
-            Flags.getRegistrar().register(new ModuleYML(this, "flags.yml"), this.getName());
-            releaseFlag = Flags.getRegistrar().getFlag("ReleasePet");
+            Set<Flag> flagSet = Flags.getRegistrar().register(new ModuleYML(this, "flags.yml"), this.getName());
+            for(Flag f : flagSet) {
+                flags.put(f.getName(), f);
+            }
+            //releaseFlag = Flags.getRegistrar().getFlag("ReleasePet");
         }
 
         // Read give aways from file
@@ -78,6 +83,7 @@ public class PetStore extends JavaPlugin {
 
         // Read sales from file
         if(economy != null) {
+            //TODO Initialize forSale
             if(yml.getConfig().isConfigurationSection("Sales")) {
                 sales = new SellAnimal(this, economy, yml.getConfig().getConfigurationSection("Sales").getValues(false));
             } else {
@@ -109,7 +115,8 @@ public class PetStore extends JavaPlugin {
         yml.getConfig().set("Give", give.serialize());
 
         // Write sales to file
-        if(sales != null) {
+        // TODO Fix for new system
+        if(forSale != null) {
             yml.getConfig().set("Sales", sales.serialize());
         }
         yml.saveConfig();
@@ -175,7 +182,7 @@ public class PetStore extends JavaPlugin {
 
     public int getSalesCount() {
         if(!isEconomy()) { return 0; }
-        return sales.getCount();
+        return forSale.size();
     }
 
     public int getGiveCount() {

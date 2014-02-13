@@ -10,7 +10,7 @@ import org.bukkit.event.player.PlayerInteractEntityEvent;
 
 import java.util.UUID;
 
-class AnimalListener implements Listener {
+final class AnimalListener implements Listener {
     private PetStore plugin;
 
     AnimalListener(PetStore plugin) {
@@ -19,10 +19,10 @@ class AnimalListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH)
     private void onPlayerCancelAnimalActions(PlayerInteractEntityEvent e) {
-        Player player = e.getPlayer();
-        UUID pID = player.getUniqueId();
-        Entity entity = e.getRightClicked();
-
+        final Player player = e.getPlayer();
+        final UUID pID = player.getUniqueId();
+        final Entity entity = e.getRightClicked();
+        final UUID aID = entity.getUniqueId();
 
         if((entity instanceof Tameable)
                 && ( plugin.commandQueue.containsKey(pID)
@@ -32,16 +32,41 @@ class AnimalListener implements Listener {
             Tameable tameable = (Tameable)entity;
 
             if(tameable.isTamed()) {
-                if(PluginCommandType.TAME.equals(plugin.commandQueue.get(pID))) {
-                    player.sendMessage(Message.TAME_ERROR.get());
-                    plugin.commandQueue.remove(player.getUniqueId());
+                if(plugin.forSale != null && plugin.forSale.containsKey(aID)) {
+                    if(plugin.buyQueue.containsKey(pID)) {
+                         if(Animal.buy(plugin, player, tameable, plugin.forSale.get(aID))) {
+                             plugin.forSale.remove(aID);
+                             plugin.buyQueue.remove(pID);
+                         }
+                    } else {
+                        if(Animal.advertise(plugin, player, plugin.forSale.get(aID))) {
+                            plugin.buyQueue.put(pID, aID);
+                            new TimeoutTask(plugin, PluginCommandType.BUY, player).runTaskLater(plugin, PetStore.getTimeout());
+                        }
+                    }
                     e.setCancelled(true);
                     return;
                 }
 
-                if(PluginCommandType.RELEASE.equals(plugin.commandQueue.get(pID))) {
-                    Animal.release(player, plugin.releaseFlag, tameable);
-                    plugin.commandQueue.remove(pID);
+                if(plugin.commandQueue.get(pID) != null) {
+                    switch(plugin.commandQueue.get(pID)) {
+                        case TAME:
+                            player.sendMessage(Message.TAME_ERROR.get());
+                            break;
+                        case RELEASE:
+                            Animal.release(player, plugin.flags.get("ReleasePet"), tameable);
+                            break;
+                        case CANCEL:
+                            //TODO Fix this for new system
+                            if(Animal.isOwner(player, tameable)) {
+                                plugin.give.cancel(player, entity);
+                                Animal.sell(plugin, player, tameable, null, 0D);
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+                    plugin.commandQueue.remove(player.getUniqueId());
                     e.setCancelled(true);
                     return;
                 }
@@ -53,15 +78,11 @@ class AnimalListener implements Listener {
                     return;
                 }
 
-                if(PluginCommandType.CANCEL.equals(plugin.commandQueue.get(pID))) {
-                    if(Animal.isOwner(player, tameable)) {
-                        plugin.give.cancel(player, entity);
-                        if(plugin.sales != null) {
-                            plugin.sales.cancel(player, entity);
-                        }
-                    }
+                if(plugin.sellQueue.containsKey(pID)) {
+                    Animal.sell(plugin, player, tameable, plugin.flags.get("SellPet"), plugin.sellQueue.get(pID));
+                    plugin.sellQueue.remove(pID);
+                    e.setCancelled(true);
                 }
-
             } else {
                 if(PluginCommandType.TAME.equals(plugin.commandQueue.get(pID))) {
                     Animal.tame(player, tameable);

@@ -8,7 +8,7 @@ import org.bukkit.permissions.Permissible;
 
 import java.util.UUID;
 
-class PluginCommand implements CommandExecutor {
+public class PluginCommand implements CommandExecutor {
     private final PetStore plugin;
 
     PluginCommand(PetStore plugin) {
@@ -98,7 +98,7 @@ class PluginCommand implements CommandExecutor {
                 yml.saveConfig();
                 return true;
             default:
-                player.sendMessage(action.getHelp());
+                player.sendMessage(getHelp(player));
                 return true;
         }
     }

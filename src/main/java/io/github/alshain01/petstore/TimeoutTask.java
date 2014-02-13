@@ -3,7 +3,7 @@ package io.github.alshain01.petstore;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 
-class TimeoutTask extends BukkitRunnable{
+final class TimeoutTask extends BukkitRunnable{
 
     PetStore plugin;
     PluginCommandType action;
