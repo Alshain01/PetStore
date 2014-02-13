@@ -66,7 +66,7 @@ public class PluginCommand implements CommandExecutor {
                 }
                 return true;
             case SELL:
-                if(plugin.sales == null) {
+                if(!PetStore.isEconomy()) {
                     player.sendMessage(Message.VAULT_ERROR.get());
                     return true;
                 }
@@ -92,8 +92,8 @@ public class PluginCommand implements CommandExecutor {
                 yml.getConfig().set("Give", plugin.give.serialize());
 
                 // Write sales to file
-                if(plugin.sales != null) {
-                    yml.getConfig().set("Sales", plugin.sales.serialize());
+                if(PetStore.isEconomy()) {
+                    yml.getConfig().set("Sales", plugin.writeSales(yml));
                 }
                 yml.saveConfig();
                 return true;
@@ -108,7 +108,7 @@ public class PluginCommand implements CommandExecutor {
         boolean first = true;
         for(PluginCommandType a : PluginCommandType.values()) {
             if(a.hasPermission(player)) {
-                if(a != PluginCommandType.SELL || plugin.sales != null) {
+                if(a != PluginCommandType.SELL || PetStore.isEconomy()) {
                     if(!first) { helpText.append(" | "); }
                     helpText.append(a.toString().toLowerCase());
                     first = false;

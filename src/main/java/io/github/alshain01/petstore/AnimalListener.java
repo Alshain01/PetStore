@@ -32,7 +32,7 @@ final class AnimalListener implements Listener {
             Tameable tameable = (Tameable)entity;
 
             if(tameable.isTamed()) {
-                if(plugin.forSale != null && plugin.forSale.containsKey(aID)) {
+                if(PetStore.isEconomy() && plugin.forSale.containsKey(aID)) {
                     if(plugin.buyQueue.containsKey(pID)) {
                          if(Animal.buy(plugin, player, tameable, plugin.forSale.get(aID))) {
                              plugin.forSale.remove(aID);

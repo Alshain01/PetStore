@@ -27,9 +27,12 @@ import java.util.*;
 
 public class PetStore extends JavaPlugin {
     static CustomYML message;  // Static for enumeration access
-    Economy economy;
+    private static long timeout = 250;
+    private static boolean economyEnabled = false;
+
+    private Updater updater = null;
+    private Economy economy = null;
     GiveAnimal give = null;
-    //SellAnimal sales = null;
 
     Map<UUID, PluginCommandType> commandQueue = new HashMap<UUID, PluginCommandType>();
     Map<UUID, String> transferQueue = new HashMap<UUID, String>();
@@ -37,11 +40,6 @@ public class PetStore extends JavaPlugin {
     Map<UUID, UUID> buyQueue = new HashMap<UUID, UUID>();
     Map<String, Object> flags = new HashMap<String, Object>();
     Map<UUID, Double> forSale = null;
-
-    private Updater updater = null;
-
-    private static long timeout = 250;
-    private static boolean economyEnabled = false;
 
     @Override
     public void onEnable() {
@@ -116,7 +114,7 @@ public class PetStore extends JavaPlugin {
 
         // Write sales to file
         // TODO Fix for new system
-        if(forSale != null) {
+        if(economyEnabled) {
             yml.getConfig().set("Sales", sales.serialize());
         }
         yml.saveConfig();
