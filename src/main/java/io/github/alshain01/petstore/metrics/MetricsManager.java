@@ -11,12 +11,15 @@ public class MetricsManager {
             final Metrics metrics = new Metrics(plugin);
 
             final Graph transGraph = metrics.createGraph("Animal Transactions");
-            transGraph.addPlotter(new Metrics.Plotter("For Sale") {
-                @Override
-                public int getValue() {
-                    return PetStore.isEconomy() ? plugin.getSalesCount() : 0;
-                }
-            });
+
+            if(PetStore.isEconomy()) {
+                transGraph.addPlotter(new Metrics.Plotter("For Sale") {
+                    @Override
+                    public int getValue() {
+                        return plugin.getSalesCount();
+                    }
+                });
+            }
 
             transGraph.addPlotter(new Metrics.Plotter("Give Away") {
                 @Override
@@ -55,8 +58,7 @@ public class MetricsManager {
             /*
 			 * Economy Graph
 			 */
-            final Graph econGraph = metrics.createGraph("Economy Enabled");
-            econGraph.addPlotter(new Metrics.Plotter(PetStore.isEconomy() ? "Yes" : "No") {
+            metrics.createGraph("Economy Enabled").addPlotter(new Metrics.Plotter(PetStore.isEconomy() ? "Yes" : "No") {
                 @Override
                 public int getValue() {
                     return 1;
