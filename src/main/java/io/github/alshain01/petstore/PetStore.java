@@ -4,11 +4,10 @@ import io.github.alshain01.flags.Flag;
 import io.github.alshain01.flags.Flags;
 import io.github.alshain01.flags.ModuleYML;
 import io.github.alshain01.flags.area.Area;
+import io.github.alshain01.petstore.metrics.MetricsManager;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandSender;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -16,7 +15,6 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.permissions.Permissible;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.RegisteredServiceProvider;
@@ -28,17 +26,20 @@ import io.github.alshain01.petstore.Updater.UpdateResult;
 import java.util.*;
 
 public class PetStore extends JavaPlugin {
-    private TransferAnimal transfer;
+    CustomYML message;
     GiveAnimal give = null;
     SellAnimal sales = null;
-    private Updater updater = null;
-    CustomYML message;
-    private Object releaseFlag  = null;
-    private static boolean economyEnabled = false;
+    TransferAnimal transfer;
 
-    private Set<UUID> cancelQueue = new HashSet<UUID>();
-    private Set<UUID> releaseQueue = new HashSet<UUID>();
-    private Set<UUID> tameQueue = new HashSet<UUID>();
+    Set<UUID> releaseQueue = new HashSet<UUID>();
+    Set<UUID> tameQueue = new HashSet<UUID>();
+    Set<UUID> cancelQueue = new HashSet<UUID>();
+
+    private Updater updater = null;
+    private Object releaseFlag  = null;
+
+    private static long timeout = 250;
+    private static boolean economyEnabled = false;
 
     @Override
     public void onEnable() {
@@ -98,6 +99,9 @@ public class PetStore extends JavaPlugin {
         if(this.getConfig().getBoolean("Metrics.Enabled")) {
             MetricsManager.StartMetrics(this);
         }
+
+        timeout = getConfig().getLong("CommandTimeout");
+        getCommand("petstore").setExecutor(new PluginCommand(this));
     }
 
     @Override
@@ -114,139 +118,11 @@ public class PetStore extends JavaPlugin {
         yml.saveConfig();
     }
 
-    @Override
-    public boolean onCommand(final CommandSender sender, Command cmd, String label, String[] args) {
-        // Check that it is our command and has the action
-        if(!cmd.getName().equalsIgnoreCase("petstore")) {
-            return false;
-        }
-
-        if (args.length < 1) {
-            sender.sendMessage(getHelp(sender));
-            return true;
-        }
-
-        // All of the command require an animal entity to be identified
-        if(!(sender instanceof Player)) {
-            sender.sendMessage(Message.CONSOLE_ERROR.get());
-        }
-
-        final Player player = (Player) sender;
-        CommandAction action;
-
-        // Get the action.
-        try {
-            action = CommandAction.valueOf(args[0].toUpperCase());
-        } catch(IllegalArgumentException e) {
-            sender.sendMessage(getHelp(player));
-            return true;
-        }
-
-        // Check that there are enough arguments
-        if(args.length < action.getTotalArgs()) {
-            player.sendMessage(action.getHelp());
-            return true;
-        }
-
-        // Check the permissions
-        if(!action.hasPermission(player)) {
-            player.sendMessage(Message.COMMAND_ERROR.get());
-            return true;
-        }
-
-        // Perform the command
-        switch (action) {
-            case GIVE:
-                give.add((Player)sender);
-                return true;
-            case TRANSFER:
-                Player receiver = Bukkit.getServer().getPlayer(args[1]);
-                if (receiver == null) {
-                    player.sendMessage(Message.PLAYER_ERROR.get());
-                } else {
-                    transfer.add(player, receiver);
-                }
-                return true;
-            case SELL:
-                if(sales == null) {
-                    player.sendMessage(Message.VAULT_ERROR.get());
-                    return true;
-                }
-
-                Double price;
-                try {
-                    price = Double.valueOf(args[1]);
-                } catch (NumberFormatException e) {
-                    player.sendMessage(Message.PRICE_ERROR.get());
-                    return true;
-                }
-
-                sales.add(player, price);
-                return true;
-            case TAME:
-                tameQueue.add(player.getUniqueId());
-                player.sendMessage(Message.TAME_INSTRUCTION.get());
-                new BukkitRunnable() {
-                    public void run() {
-                        if(tameQueue.contains(player.getUniqueId())) {
-                            tameQueue.remove(player.getUniqueId());
-                            player.sendMessage(Message.TAME_TIMEOUT.get());
-                        }
-                    }
-                }.runTaskLater(this, getTimeout());
-                return true;
-            case RELEASE:
-                releaseQueue.add(player.getUniqueId());
-                player.sendMessage(Message.RELEASE_INSTRUCTION.get());
-                new BukkitRunnable() {
-                    public void run() {
-                        if(releaseQueue.contains(player.getUniqueId())) {
-                            releaseQueue.remove(player.getUniqueId());
-                            player.sendMessage(Message.RELEASE_TIMEOUT.get());
-                        }
-                    }
-                }.runTaskLater(this, getTimeout());
-                return true;
-            case CANCEL:
-                if(!cancelQueue.contains(player.getUniqueId())) {
-                    cancelQueue.add(player.getUniqueId());
-                    new BukkitRunnable() {
-                        public void run() {
-                            if(cancelQueue.contains(player.getUniqueId())) {
-                                cancelQueue.remove(player.getUniqueId());
-                                player.sendMessage(Message.CANCEL_TIMEOUT.get());
-                            }
-                        }
-                    }.runTaskLater(this, getTimeout());
-                }
-                sender.sendMessage(Message.CANCEL_INSTRUCTION.get());
-                return true;
-            case RELOAD:
-                this.reload();
-                return true;
-            case SAVE:
-                CustomYML yml = new CustomYML(this, "data.yml");
-
-                // Write give aways to file
-                yml.getConfig().set("Give", give.get());
-
-                // Write sales to file
-                if(sales != null) {
-                    yml.getConfig().set("Sales", sales.serialize());
-                }
-                yml.saveConfig();
-                return true;
-            default:
-                player.sendMessage(action.getHelp());
-                return true;
-        }
-    }
-
-    protected static boolean isEconomy() {
+    public static boolean isEconomy() {
         return economyEnabled;
     }
 
-    private void reload() {
+    void reload() {
         cancelQueue = new HashSet<UUID>();
         releaseQueue = new HashSet<UUID>();
         tameQueue = new HashSet<UUID>();
@@ -254,23 +130,8 @@ public class PetStore extends JavaPlugin {
         message.reload();
     }
 
-    private String getHelp(Permissible player) {
-        StringBuilder helpText = new StringBuilder("/petstore <");
-        boolean first = true;
-        for(CommandAction a : CommandAction.values()) {
-            if(a.hasPermission(player)) {
-                if(a != CommandAction.SELL || sales != null) {
-                    if(!first) { helpText.append(" | "); }
-                    helpText.append(a.toString().toLowerCase());
-                    first = false;
-                }
-            }
-        }
-        return helpText.append(">").toString();
-    }
-
     static long getTimeout() {
-       return Bukkit.getPluginManager().getPlugin("PetStore").getConfig().getLong("CommandTimeout");
+       return timeout;
     }
 
     private void tameAnimal(Player player, Tameable animal) {
@@ -422,4 +283,13 @@ public class PetStore extends JavaPlugin {
             }
         }
     }
+
+    public int getSalesCount() {
+        return sales.getCount();
+    }
+
+    public int getGiveCount() {
+        return give.getCount();
+    }
+
 }

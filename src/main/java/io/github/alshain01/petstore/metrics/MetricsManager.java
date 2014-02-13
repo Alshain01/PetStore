@@ -1,12 +1,12 @@
-package io.github.alshain01.petstore;
+package io.github.alshain01.petstore.metrics;
 
-import org.bukkit.plugin.Plugin;
+import io.github.alshain01.petstore.PetStore;
 
-import io.github.alshain01.petstore.Metrics.Graph;
+import io.github.alshain01.petstore.metrics.Metrics.Graph;
 import java.io.IOException;
 
 public class MetricsManager {
-    static void StartMetrics(final Plugin plugin) {
+    public static void StartMetrics(final PetStore plugin) {
         try {
             final Metrics metrics = new Metrics(plugin);
 
@@ -14,14 +14,14 @@ public class MetricsManager {
             transGraph.addPlotter(new Metrics.Plotter("For Sale") {
                 @Override
                 public int getValue() {
-                    return ((PetStore)plugin).sales == null ? 0 : ((PetStore)plugin).sales.getCount();
+                    return PetStore.isEconomy() ? plugin.getSalesCount() : 0;
                 }
             });
 
             transGraph.addPlotter(new Metrics.Plotter("Give Away") {
                 @Override
                 public int getValue() {
-                    return ((PetStore)plugin).give.getCount();
+                    return plugin.getGiveCount();
                 }
             });
 

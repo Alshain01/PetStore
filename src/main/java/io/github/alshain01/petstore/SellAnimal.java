@@ -22,7 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-public class SellAnimal implements Listener, ConfigurationSerializable {
+class SellAnimal implements Listener, ConfigurationSerializable {
     //<Owner, Cost>
     private final Map<UUID, Double> sellQueue = new HashMap<UUID, Double>();
 

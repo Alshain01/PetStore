@@ -15,7 +15,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-public class TransferAnimal implements Listener {
+class TransferAnimal implements Listener {
     private final JavaPlugin plugin;
     private final Map<UUID, String> queue = new HashMap<UUID, String>();
 

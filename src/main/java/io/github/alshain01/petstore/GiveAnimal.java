@@ -15,7 +15,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.*;
 
-public class GiveAnimal implements Listener {
+class GiveAnimal implements Listener {
     private final JavaPlugin plugin;
 
     // Holds a list of players who have used the give command
