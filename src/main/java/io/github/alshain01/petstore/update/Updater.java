@@ -1,15 +1,10 @@
-package io.github.alshain01.petstore;
+package io.github.alshain01.petstore.update;
 
 /*
 * Updater for Bukkit.
 *
 * This class provides the means to safely and easily update a plugin, or check to see if it is updated using dev.bukkit.org
 */
-
-import org.bukkit.plugin.Plugin;
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
-import org.json.simple.JSONValue;
 
 import java.io.*;
 import java.net.MalformedURLException;
@@ -19,22 +14,27 @@ import java.util.Enumeration;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+import org.bukkit.plugin.Plugin;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.JSONValue;
+
 /**
-* Check dev.bukkit.org to find updates for a given plugin, and download the updates if needed.
-* <p/>
-* <b>VERY, VERY IMPORTANT</b>: Because there are no standards for adding auto-update toggles in your plugin's config, this system provides NO CHECK WITH YOUR CONFIG to make sure the user has allowed auto-updating.
-* <br>
-* It is a <b>BUKKIT POLICY</b> that you include a boolean value in your config that prevents the auto-updater from running <b>AT ALL</b>.
-* <br>
-* If you fail to include this option in your config, your plugin will be <b>REJECTED</b> when you attempt to submit it to dev.bukkit.org.
-* <p/>
-* An example of a good configuration option would be something similar to 'auto-update: true' - if this value is set to false you may NOT run the auto-updater.
-* <br>
-* If you are unsure about these rules, please read the plugin submission guidelines: http://goo.gl/8iU5l
-*
-* @author Gravity
-* @version 2.0
-*/
+ * Check dev.bukkit.org to find updates for a given plugin, and download the updates if needed.
+ * <p/>
+ * <b>VERY, VERY IMPORTANT</b>: Because there are no standards for adding auto-update toggles in your plugin's config, this system provides NO CHECK WITH YOUR CONFIG to make sure the user has allowed auto-updating.
+ * <br>
+ * It is a <b>BUKKIT POLICY</b> that you include a boolean value in your config that prevents the auto-updater from running <b>AT ALL</b>.
+ * <br>
+ * If you fail to include this option in your config, your plugin will be <b>REJECTED</b> when you attempt to submit it to dev.bukkit.org.
+ * <p/>
+ * An example of a good configuration option would be something similar to 'auto-update: true' - if this value is set to false you may NOT run the auto-updater.
+ * <br>
+ * If you are unsure about these rules, please read the plugin submission guidelines: http://goo.gl/8iU5l
+ *
+ * @author Gravity
+ * @version 2.0
+ */
 @SuppressWarnings("ALL")
 final class Updater {
 
@@ -66,74 +66,74 @@ final class Updater {
     private Updater.UpdateResult result = Updater.UpdateResult.SUCCESS; // Used for determining the outcome of the update process
 
     /**
-* Gives the dev the result of the update process. Can be obtained by called getResult().
-*/
+     * Gives the dev the result of the update process. Can be obtained by called getResult().
+     */
     public enum UpdateResult {
         /**
-* The updater found an update, and has readied it to be loaded the next time the server restarts/reloads.
-*/
+         * The updater found an update, and has readied it to be loaded the next time the server restarts/reloads.
+         */
         SUCCESS,
         /**
-* The updater did not find an update, and nothing was downloaded.
-*/
+         * The updater did not find an update, and nothing was downloaded.
+         */
         NO_UPDATE,
         /**
-* The server administrator has disabled the updating system
-*/
+         * The server administrator has disabled the updating system
+         */
         DISABLED,
         /**
-* The updater found an update, but was unable to download it.
-*/
+         * The updater found an update, but was unable to download it.
+         */
         FAIL_DOWNLOAD,
         /**
-* For some reason, the updater was unable to contact dev.bukkit.org to download the file.
-*/
+         * For some reason, the updater was unable to contact dev.bukkit.org to download the file.
+         */
         FAIL_DBO,
         /**
-* When running the version check, the file on DBO did not contain the a version in the format 'vVersion' such as 'v1.0'.
-*/
+         * When running the version check, the file on DBO did not contain the a version in the format 'vVersion' such as 'v1.0'.
+         */
         FAIL_NOVERSION,
         /**
-* The id provided by the plugin running the updater was invalid and doesn't exist on DBO.
-*/
+         * The id provided by the plugin running the updater was invalid and doesn't exist on DBO.
+         */
         FAIL_BADID,
         /**
-* The server administrator has improperly configured their API key in the configuration
-*/
+         * The server administrator has improperly configured their API key in the configuration
+         */
         FAIL_APIKEY,
         /**
-* The updater found an update, but because of the UpdateType being set to NO_DOWNLOAD, it wasn't downloaded.
-*/
+         * The updater found an update, but because of the UpdateType being set to NO_DOWNLOAD, it wasn't downloaded.
+         */
         UPDATE_AVAILABLE
     }
 
     /**
-* Allows the dev to specify the type of update that will be run.
-*/
+     * Allows the dev to specify the type of update that will be run.
+     */
     public enum UpdateType {
         /**
-* Run a version check, and then if the file is out of date, download the newest version.
-*/
+         * Run a version check, and then if the file is out of date, download the newest version.
+         */
         DEFAULT,
         /**
-* Don't run a version check, just find the latest update and download it.
-*/
+         * Don't run a version check, just find the latest update and download it.
+         */
         NO_VERSION_CHECK,
         /**
-* Get information about the version and the download size, but don't actually download anything.
-*/
+         * Get information about the version and the download size, but don't actually download anything.
+         */
         NO_DOWNLOAD
     }
 
     /**
-* Initialize the updater
-*
-* @param plugin The plugin that is checking for an update.
-* @param id The dev.bukkit.org id of the project
-* @param file The file that the plugin is running from, getType this by doing this.getFile() from within your main class.
-* @param type Specify the type of update this will be. See {@link UpdateType}
-* @param announce True if the program should announce the progress of new updates in console
-*/
+     * Initialize the updater
+     *
+     * @param plugin The plugin that is checking for an update.
+     * @param id The dev.bukkit.org id of the project
+     * @param file The file that the plugin is running from, getType this by doing this.getFile() from within your main class.
+     * @param type Specify the type of update this will be. See {@link UpdateType}
+     * @param announce True if the program should announce the progress of new updates in console
+     */
     public Updater(Plugin plugin, int id, File file, UpdateType type, String key, boolean announce) {
         this.plugin = plugin;
         this.type = type;
@@ -160,49 +160,49 @@ final class Updater {
     }
 
     /**
-* Get the result of the update process.
-*/
+     * Get the result of the update process.
+     */
     public Updater.UpdateResult getResult() {
         this.waitForThread();
         return this.result;
     }
 
     /**
-* Get the latest version's release type (release, beta, or alpha).
-*/
+     * Get the latest version's release type (release, beta, or alpha).
+     */
     public String getLatestType() {
         this.waitForThread();
         return this.versionType;
     }
 
     /**
-* Get the latest version's game version.
-*/
+     * Get the latest version's game version.
+     */
     public String getLatestGameVersion() {
         this.waitForThread();
         return this.versionGameVersion;
     }
 
     /**
-* Get the latest version's name.
-*/
+     * Get the latest version's name.
+     */
     public String getLatestName() {
         this.waitForThread();
         return this.versionName;
     }
 
     /**
-* Get the latest version's file link.
-*/
+     * Get the latest version's file link.
+     */
     public String getLatestFileLink() {
         this.waitForThread();
         return this.versionLink;
     }
 
     /**
-* As the result of Updater output depends on the thread's completion, it is necessary to wait for the thread to finish
-* before allowing anyone to check the result.
-*/
+     * As the result of Updater output depends on the thread's completion, it is necessary to wait for the thread to finish
+     * before allowing anyone to check the result.
+     */
     private void waitForThread() {
         if ((this.thread != null) && this.thread.isAlive()) {
             try {
@@ -214,8 +214,8 @@ final class Updater {
     }
 
     /**
-* Save an update from dev.bukkit.org into the server's update folder.
-*/
+     * Save an update from dev.bukkit.org into the server's update folder.
+     */
     private void saveFile(File folder, String file, String u) {
         if (!folder.exists()) {
             folder.mkdir();
@@ -276,8 +276,8 @@ final class Updater {
     }
 
     /**
-* Part of Zip-File-Extractor, modified by Gravity for use with Bukkit
-*/
+     * Part of Zip-File-Extractor, modified by Gravity for use with Bukkit
+     */
     private void unzip(String file) {
         try {
             final File fSourceZip = new File(file);
@@ -353,8 +353,8 @@ final class Updater {
     }
 
     /**
-* Check if the name of a jar is one of the plugins currently installed, used for extracting the correct files out of a zip.
-*/
+     * Check if the name of a jar is one of the plugins currently installed, used for extracting the correct files out of a zip.
+     */
     private boolean pluginFile(String name) {
         for (final File file : new File("plugins").listFiles()) {
             if (file.getName().equals(name)) {
@@ -365,8 +365,8 @@ final class Updater {
     }
 
     /**
-* Check to see if the program should continue by evaluation whether the plugin is already updated, or shouldn't be updated
-*/
+     * Check to see if the program should continue by evaluation whether the plugin is already updated, or shouldn't be updated
+     */
     private boolean versionCheck(String title) {
         if (this.type != UpdateType.NO_VERSION_CHECK) {
             final String version = this.plugin.getDescription().getVersion();
@@ -398,8 +398,8 @@ final class Updater {
     }
 
     /**
-* Used to calculate the version string as an Integer
-*/
+     * Used to calculate the version string as an Integer
+     */
     private Integer calVer(String s) throws NumberFormatException {
         if (s.contains(".")) {
             final StringBuilder sb = new StringBuilder();
@@ -415,8 +415,8 @@ final class Updater {
     }
 
     /**
-* Evaluate whether the version number is marked showing that it should not be updated by this program
-*/
+     * Evaluate whether the version number is marked showing that it should not be updated by this program
+     */
     private boolean hasTag(String version) {
         for (final String string : Updater.NO_UPDATE_TAG) {
             if (version.contains(string)) {

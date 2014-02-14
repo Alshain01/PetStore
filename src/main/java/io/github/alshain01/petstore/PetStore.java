@@ -4,18 +4,14 @@ import io.github.alshain01.flags.Flag;
 import io.github.alshain01.flags.Flags;
 import io.github.alshain01.flags.ModuleYML;
 import io.github.alshain01.petstore.metrics.MetricsManager;
+import io.github.alshain01.petstore.update.UpdateListener;
+import io.github.alshain01.petstore.update.UpdateScheduler;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.Bukkit;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
-import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.plugin.Plugin;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.scheduler.BukkitRunnable;
-
-import io.github.alshain01.petstore.Updater.UpdateResult;
 
 import java.util.*;
 
@@ -24,7 +20,6 @@ public class PetStore extends JavaPlugin {
 
     long timeout = 250;
     private static boolean economyEnabled = false;
-    private Updater updater = null;
 
     Economy economy = null;
     final Map<String, Object> flags = new HashMap<String, Object>();
@@ -70,10 +65,12 @@ public class PetStore extends JavaPlugin {
 
         PluginManager pm = Bukkit.getPluginManager();
 
-        if (getConfig().getBoolean("Update.Check")) {
-            new UpdateScheduler().run();
-            new UpdateScheduler().runTaskTimer(this, 0, 1728000); // Run every 24 hours after the first time
-            getServer().getPluginManager().registerEvents(new UpdateListener(), this);
+        ConfigurationSection updateConfig = getConfig().getConfigurationSection("Update");
+        if (updateConfig.getBoolean("Check")) {
+            UpdateScheduler updater = new UpdateScheduler(getFile(), updateConfig);
+            updater.run();
+            updater.runTaskTimer(this, 0, 1728000);
+            pm.registerEvents(new UpdateListener(updater), this);
         }
 
         if(this.getConfig().getBoolean("Metrics.Enabled")) {
@@ -137,47 +134,6 @@ public class PetStore extends JavaPlugin {
 
     public static boolean isEconomy() {
         return economyEnabled;
-    }
-
-    /*
-     * Contains event listeners required for plugin maintenance.
-     */
-    private class UpdateListener implements Listener {
-        // Update listener
-        @EventHandler(ignoreCancelled = true)
-        private void onPlayerJoin(PlayerJoinEvent e) {
-            if(updater == null) { return; }
-            if (e.getPlayer().hasPermission("petstore.notifyupdate")) {
-                if(updater.getResult() == Updater.UpdateResult.UPDATE_AVAILABLE) {
-                    e.getPlayer().sendMessage(Message.UPDATE_AVAILABLE.get());
-                } else if(updater.getResult() == UpdateResult.SUCCESS) {
-                    e.getPlayer().sendMessage(Message.UPDATE_DOWNLOADED.get());
-                }
-            }
-        }
-    }
-
-    /*
-     * Handles update checking and downloading
-     */
-    private class UpdateScheduler extends BukkitRunnable {
-        @Override
-        public void run() {
-            // Update script
-            final String key = getConfig().getString("Update.ServerModsAPIKey");
-            final Plugin plugin = Bukkit.getServer().getPluginManager().getPlugin("PetStore");
-            updater = (getConfig().getBoolean("Update.Download"))
-                    ? new Updater(plugin, 70808, getFile(), Updater.UpdateType.DEFAULT, key, true)
-                    : new Updater(plugin, 70808, getFile(), Updater.UpdateType.NO_DOWNLOAD, key, false);
-
-            if (updater.getResult() == UpdateResult.UPDATE_AVAILABLE) {
-                Bukkit.getServer().getConsoleSender()
-                        .sendMessage("[PetStore] " + Message.UPDATE_AVAILABLE.get());
-            } else if (updater.getResult() == UpdateResult.SUCCESS) {
-                Bukkit.getServer().getConsoleSender()
-                        .sendMessage("[PetStore] "	+ Message.UPDATE_DOWNLOADED.get());
-            }
-        }
     }
 
     public int getSalesCount() {

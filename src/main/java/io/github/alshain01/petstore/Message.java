@@ -2,7 +2,7 @@ package io.github.alshain01.petstore;
 
 import org.bukkit.ChatColor;
 
-enum Message {
+public enum Message {
     CONSOLE_ERROR, COMMAND_ERROR, PLAYER_ERROR, VAULT_ERROR, PRICE_ERROR,
     OWNER_ERROR, TRANSACTION_ERROR, TAME_ERROR, TIMEOUT,
     CLICK_INSTRUCTION, BUY_INSTRUCTION, CLAIM_INSTRUCTION,

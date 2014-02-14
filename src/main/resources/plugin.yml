@@ -56,5 +56,5 @@ permissions:
     children:
       petstore.command: true
   petstore.notifyupdate:
-    description: Notifies players when an update to PetStore is available.
+    description: Notifies players when an io.github.alshain01.petstore.update to PetStore is available.
     default: op
