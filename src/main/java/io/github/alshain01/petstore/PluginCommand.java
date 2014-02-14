@@ -103,15 +103,15 @@ class PluginCommand implements CommandExecutor {
         }
     }
 
-    private String getHelp(Permissible player) {
-        if(player instanceof ConsoleCommandSender) {
+    private String getHelp(Permissible sender) {
+        if(sender instanceof ConsoleCommandSender) {
             return "/petstore <save | reload>";
         }
 
         StringBuilder helpText = new StringBuilder("/petstore <");
         boolean first = true;
         for(PluginCommandType a : PluginCommandType.values()) {
-            if(a.hasPermission(player)) {
+            if(a.hasPermission(sender)) {
                 if(a != PluginCommandType.SELL || PetStore.isEconomy()) {
                     if(!first) { helpText.append(" | "); }
                     helpText.append(a.toString().toLowerCase());
