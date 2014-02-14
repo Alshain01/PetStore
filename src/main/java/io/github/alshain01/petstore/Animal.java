@@ -44,8 +44,8 @@ final class Animal {
         }
     }
 
-    static boolean release(Player player, Object flag, Tameable animal) {
-        if(!isOwner(player, animal) || !checkFlag(player, flag, ((Entity)animal).getLocation())) { return false; }
+    static void release(Player player, Object flag, Tameable animal) {
+        if(!isOwner(player, animal) || isFlagSet(player, flag, ((Entity)animal).getLocation())) { return; }
 
         if(animal instanceof Ocelot) {
             ((Ocelot)animal).setCatType(Ocelot.Type.WILD_OCELOT);
@@ -64,35 +64,33 @@ final class Animal {
         }
         ((LivingEntity)animal).setLeashHolder(null);
         animal.setOwner(null);
-        return true;
     }
 
-    static boolean transfer(Player owner, Tameable animal, String receiver) {
+    static void transfer(Player owner, Tameable animal, String receiver) {
         Player r = Bukkit.getPlayer(receiver);
 
-        if(!Animal.isOwner(owner, animal)) { return false; }
+        if(!Animal.isOwner(owner, animal)) { return; }
 
         if (r == null) {
             owner.sendMessage(Message.PLAYER_ERROR.get());
-            return false;
+            return;
         }
 
         animal.setOwner(r);
 
         Location loc = ((Entity)animal).getLocation();
         owner.sendMessage(Message.TRANSFER_NOTIFY_OWNER.get().replaceAll("\\{Player\\}", r.getName()));
-        r.sendMessage(Message.TRANSFER_NOTIFY_RECEIVER.get()
-                .replaceAll("\\{Player\\}", owner.getName()
-                        .replaceAll("\\{Location\\}", loc.getBlockX() + ", " + loc.getBlockZ())));
-        return true;
+        r.sendMessage(Message.TRANSFER_NOTIFY_RECEIVER.get().replaceAll("\\{Player\\}", owner.getName())
+                        .replaceAll("\\{Location\\}", "X: " + loc.getBlockX() + ", Z: " +loc.getBlockZ()));
     }
 
-    static boolean sell(PetStore plugin, Player player, Tameable animal, Object flag, Double price) {
-        if(!isOwner(player, animal) || !checkFlag(player, flag, ((Entity)animal).getLocation())) { return false; }
+    static void sell(PetStore plugin, Player player, Tameable animal, Object flag, Double price) {
+        if(!isOwner(player, animal) || isFlagSet(player, flag, ((Entity)animal).getLocation())) { return; }
         UUID aID = ((Entity)animal).getUniqueId();
 
         if(price > 0D) {
             plugin.forSale.put(aID, price);
+            plugin.forClaim.remove(((Entity)animal).getUniqueId());  // Only one at a time
             player.sendMessage(Message.SELL_SET.get().replaceAll("\\{Price\\}", plugin.economy.format(price)));
         } else {
             if(plugin.forSale.containsKey(aID)) {
@@ -100,7 +98,6 @@ final class Animal {
                 player.sendMessage(Message.SELL_CANCEL.get());
             }
         }
-        return true;
     }
 
     static boolean advertise(PetStore plugin, Player player, Double price) {
@@ -135,6 +132,18 @@ final class Animal {
         return true;
     }
 
+    static void give(PetStore plugin, Player player, Object flag, Tameable animal) {
+        if(!isOwner(player, animal) || isFlagSet(player, flag, ((Entity)animal).getLocation())) { return; }
+        plugin.forClaim.add(((Entity)animal).getUniqueId());
+        plugin.forSale.remove(((Entity)animal).getUniqueId());  // Only one at a time
+        player.sendMessage(Message.GIVE_SET.get());
+    }
+
+    static void claim(Player player, Tameable animal) {
+        animal.setOwner(player);
+        player.sendMessage(Message.CLAIM_NOTIFY.get());
+    }
+
     static boolean isOwner(Player player, Tameable animal) {
         if(player.hasPermission("petstore.admin") || animal.getOwner().equals(player)) {
             return true;
@@ -143,16 +152,7 @@ final class Animal {
         return false;
     }
 
-    /**
-     * Gets if the animal can be tamed
-     *
-     * @return False if the animal is not tameable or is already tamed.
-     */
-    static boolean isUntamed(Entity e) {
-        return (!(e instanceof Tameable) || !((Tameable)e).isTamed());
-    }
-
-    private static boolean checkFlag(Player player, Object flag, Location location) {
+    private static boolean isFlagSet(Player player, Object flag, Location location) {
         if(flag != null) {
             Flag f = (Flag)flag;
             Area area = System.getActive().getAreaAt(location);
@@ -160,9 +160,9 @@ final class Animal {
                     && (!player.hasPermission(f.getBypassPermission())
                     || !area.hasTrust(f, player))) {
                 player.sendMessage(area.getMessage(f, player.getName()));
-                return false;
+                return true;
             }
         }
-        return true;
+        return false;
     }
 }

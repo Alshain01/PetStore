@@ -8,7 +8,7 @@ import org.bukkit.permissions.Permissible;
 
 import java.util.UUID;
 
-public class PluginCommand implements CommandExecutor {
+class PluginCommand implements CommandExecutor {
     private final PetStore plugin;
 
     PluginCommand(PetStore plugin) {
@@ -53,7 +53,7 @@ public class PluginCommand implements CommandExecutor {
             case CANCEL:
                 plugin.commandQueue.put(pID, action);
                 player.sendMessage(Message.CLICK_INSTRUCTION.get().replaceAll("\\{Action\\}", action.getMessage().toLowerCase()));
-                new TimeoutTask(plugin, action, player).runTaskLater(plugin, PetStore.getTimeout());
+                new TimeoutTask(plugin, action, player).runTaskLater(plugin, plugin.timeout);
                 return true;
             case TRANSFER:
                 Player receiver = Bukkit.getServer().getPlayer(args[1]);
@@ -62,7 +62,7 @@ public class PluginCommand implements CommandExecutor {
                 } else {
                     plugin.transferQueue.put(pID, receiver.getName());
                     player.sendMessage(Message.CLICK_INSTRUCTION.get().replaceAll("\\{Action\\}", action.getMessage().toLowerCase()));
-                    new TimeoutTask(plugin, action, player).runTaskLater(plugin, PetStore.getTimeout());
+                    new TimeoutTask(plugin, action, player).runTaskLater(plugin, plugin.timeout);
                 }
                 return true;
             case SELL:
@@ -80,22 +80,13 @@ public class PluginCommand implements CommandExecutor {
                 }
                 plugin.sellQueue.put(pID, price);
                 player.sendMessage(Message.CLICK_INSTRUCTION.get().replaceAll("\\{Action\\}", action.getMessage().toLowerCase()));
-                new TimeoutTask(plugin, action, player).runTaskLater(plugin, PetStore.getTimeout());
+                new TimeoutTask(plugin, action, player).runTaskLater(plugin, plugin.timeout);
                 return true;
              case RELOAD:
                 plugin.reload();
                 return true;
             case SAVE:
-                CustomYML yml = new CustomYML(plugin, "data.yml");
-
-                // Write give aways to file
-                yml.getConfig().set("Give", plugin.give.serialize());
-
-                // Write sales to file
-                if(PetStore.isEconomy()) {
-                    yml.getConfig().set("Sales", plugin.writeSales(yml));
-                }
-                yml.saveConfig();
+                plugin.writeData();
                 return true;
             default:
                 player.sendMessage(getHelp(player));
