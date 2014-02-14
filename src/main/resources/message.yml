@@ -2,7 +2,6 @@ Message:
   #
   # Errors
   #
-  CONSOLE_ERROR: '&cPetStore commands may not be used from the console.'
   COMMAND_ERROR: '&cYou do not have permission to use that command.'
   PLAYER_ERROR: '&cPlayer could not be found on the server.'
   VAULT_ERROR: '&cVault is not configured on this server.'
