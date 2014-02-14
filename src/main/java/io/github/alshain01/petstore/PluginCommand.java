@@ -22,7 +22,28 @@ class PluginCommand implements CommandExecutor {
             return true;
         }
 
-        // All of the command require an animal entity to be identified
+        final PluginCommandType action = getAction(args[0], sender);
+        if(action == null) { return true; }
+
+        // Check that there are enough arguments
+        if(args.length < action.getTotalArgs()) {
+            sender.sendMessage(action.getHelp());
+            return true;
+        }
+
+        // Console actions
+        switch(action) {
+            case RELOAD:
+                plugin.reload();
+                return true;
+            case SAVE:
+                plugin.writeData();
+                return true;
+            default:
+                break;
+        }
+
+        // All of the remaining commands require an animal entity to be identified
         if(!(sender instanceof Player)) {
             sender.sendMessage(Message.CONSOLE_ERROR.get());
             return true;
@@ -30,14 +51,7 @@ class PluginCommand implements CommandExecutor {
 
         final Player player = (Player) sender;
         final UUID pID = player.getUniqueId();
-        final PluginCommandType action = getAction(args[0], player);
-        if(action == null) { return true; }
 
-        // Check that there are enough arguments
-        if(args.length < action.getTotalArgs()) {
-            player.sendMessage(action.getHelp());
-            return true;
-        }
 
         // Check the permissions
         if(!action.hasPermission(player)) {
@@ -82,12 +96,6 @@ class PluginCommand implements CommandExecutor {
                 player.sendMessage(Message.CLICK_INSTRUCTION.get().replaceAll("\\{Action\\}", action.getMessage().toLowerCase()));
                 new TimeoutTask(plugin, action, player).runTaskLater(plugin, plugin.timeout);
                 return true;
-             case RELOAD:
-                plugin.reload();
-                return true;
-            case SAVE:
-                plugin.writeData();
-                return true;
             default:
                 player.sendMessage(getHelp(player));
                 return true;
@@ -109,11 +117,11 @@ class PluginCommand implements CommandExecutor {
         return helpText.append(">").toString();
     }
 
-    private PluginCommandType getAction(String action, Player player) {
+    private PluginCommandType getAction(String action, CommandSender sender) {
         try {
             return PluginCommandType.valueOf(action.toUpperCase());
         } catch(IllegalArgumentException e) {
-            player.sendMessage(getHelp(player));
+            sender.sendMessage(getHelp(sender));
             return null;
         }
     }

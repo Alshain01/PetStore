@@ -104,7 +104,7 @@ public class PetStore extends JavaPlugin {
         readData();
     }
 
-    void readData() {
+    private void readData() {
         CustomYML yml = new CustomYML(this, "data.yml");
         for(Object o : yml.getConfig().getList("Give")) {
             forClaim.add(UUID.fromString((String) o));
