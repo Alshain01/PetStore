@@ -32,7 +32,7 @@ public class UpdateScheduler extends BukkitRunnable{
         final int PLUGIN_ID = 70808;
 
         // Update script
-        final Plugin plugin = Bukkit.getServer().getPluginManager().getPlugin("Flags");
+        final Plugin plugin = Bukkit.getServer().getPluginManager().getPlugin("PetStore");
         updater = new Updater(plugin, PLUGIN_ID, file, type, key, type == UpdateType.DEFAULT);
 
         if (updater.getResult() == UpdateResult.UPDATE_AVAILABLE) {
