@@ -32,14 +32,14 @@ public class MetricsManager {
 			 * Auto Update settings
 			 */
             graph = metrics.createGraph("Update Configuration");
-            if (!plugin.getConfig().getBoolean("PetStore.Update.Check")) {
+            if (!plugin.getConfig().getBoolean("Update.Check")) {
                 graph.addPlotter(new Metrics.Plotter("No Updates") {
                     @Override
                     public int getValue() {
                         return 1;
                     }
                 });
-            } else if (!plugin.getConfig().getBoolean("PetStore.Update.Download")) {
+            } else if (!plugin.getConfig().getBoolean("Update.Download")) {
                 graph.addPlotter(new Metrics.Plotter("Check for Updates") {
                     @Override
                     public int getValue() {

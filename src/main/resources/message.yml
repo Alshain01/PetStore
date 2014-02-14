@@ -44,5 +44,5 @@ Message:
   #
   # Updater
   #
-  UPDATE_AVAILABLE: '&5The version of PetStore that this server is running is out of date.  Please consider updating to the latest version at dev.bukkit.org/bukkit-plugins/petstore/.'
-  UPDATE_DOWNLOADED: '&5An io.github.alshain01.petstore.update to PetStore has been downloaded and will be installed when the server is reloaded.'
+  UPDATE_AVAILABLE: '&6The version of PetStore that this server is running is out of date.  Please consider updating to the latest version at dev.bukkit.org/bukkit-plugins/petstore/.'
+  UPDATE_DOWNLOADED: '&6An io.github.alshain01.petstore.update to PetStore has been downloaded and will be installed when the server is reloaded.'
