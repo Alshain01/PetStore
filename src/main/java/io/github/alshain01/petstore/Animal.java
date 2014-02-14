@@ -66,11 +66,10 @@ final class Animal {
         animal.setOwner(null);
     }
 
-    static void transfer(Player owner, Tameable animal, String receiver) {
+    static void transfer(Player owner, Tameable animal, Object flag, String receiver) {
+        if(!Animal.isOwner(owner, animal)|| isFlagSet(owner, flag, ((Entity)animal).getLocation())) { return; }
+
         Player r = Bukkit.getPlayer(receiver);
-
-        if(!Animal.isOwner(owner, animal)) { return; }
-
         if (r == null) {
             owner.sendMessage(Message.PLAYER_ERROR.get());
             return;

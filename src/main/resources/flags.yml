@@ -1,10 +1,4 @@
 Flag:
-  SellPet:
-    Description: Toggles players ability to sell pets in the area.
-    Default: true
-    Player: true
-    AreaMessage: '&cYou are not allowed to sell pets in &6{Owner}&c''s {AreaType}.'
-    WorldMessage: '&cYou are not allowed to sell pets in &6{World}&c.'
   GivePet:
     Description: Toggles players ability to give away pets in the area.
     Default: true
@@ -17,3 +11,15 @@ Flag:
     Player: true
     AreaMessage: '&cYou are not allowed to release pets in &6{Owner}&c''s {AreaType}.'
     WorldMessage: '&cYou are not allowed to release pets in &6{World}&c.'
+  SellPet:
+    Description: Toggles players ability to sell pets in the area.
+    Default: true
+    Player: true
+    AreaMessage: '&cYou are not allowed to sell pets in &6{Owner}&c''s {AreaType}.'
+    WorldMessage: '&cYou are not allowed to sell pets in &6{World}&c.'
+  TransferPet:
+    Description: Toggles players ability to transfer pets in the area.
+    Default: true
+    Player: true
+    AreaMessage: '&cYou are not allowed to transfer pets in &6{Owner}&c''s {AreaType}.'
+    WorldMessage: '&cYou are not allowed to transfer pets in &6{World}&c.'

@@ -99,7 +99,7 @@ final class AnimalListener implements Listener {
             }
 
             if(plugin.transferQueue.containsKey(pID)) {
-                Animal.transfer(player, tameable, plugin.transferQueue.get(pID));
+                Animal.transfer(player, tameable,plugin.flags.get("TransferPet"), plugin.transferQueue.get(pID));
                 plugin.transferQueue.remove(pID);
                 e.setCancelled(true);
                 return;
