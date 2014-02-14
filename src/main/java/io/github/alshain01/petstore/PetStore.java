@@ -17,20 +17,19 @@ import java.util.*;
 
 public class PetStore extends JavaPlugin {
     static CustomYML message;  // Static for enumeration access
-
-    long timeout = 250;
     private static boolean economyEnabled = false;
 
+    long timeout = 250;
     Economy economy = null;
-    final Map<String, Object> flags = new HashMap<String, Object>();
 
-    Map<UUID, PluginCommandType> commandQueue = new HashMap<UUID, PluginCommandType>();
-    Map<UUID, String> transferQueue = new HashMap<UUID, String>();
-    Map<UUID, Double> sellQueue = new HashMap<UUID, Double>();
-    Map<UUID, UUID> buyQueue = new HashMap<UUID, UUID>();
-    Map<UUID, UUID> claimQueue = new HashMap<UUID, UUID>();
+    final Map<String, Object> flags = new HashMap<String, Object>();
+    final Map<UUID, PluginCommandType> commandQueue = new HashMap<UUID, PluginCommandType>();
+    final Map<UUID, String> transferQueue = new HashMap<UUID, String>();
+    final Map<UUID, Double> sellQueue = new HashMap<UUID, Double>();
+    final Map<UUID, UUID> buyQueue = new HashMap<UUID, UUID>();
+    final Map<UUID, UUID> claimQueue = new HashMap<UUID, UUID>();
+    final List<UUID> forClaim = new ArrayList<UUID>();
     Map<UUID, Double> forSale = null;
-    List<UUID> forClaim = new ArrayList<UUID>();
 
     @Override
     public void onEnable() {
@@ -89,13 +88,15 @@ public class PetStore extends JavaPlugin {
 
     void reload() {
         writeData();
-        commandQueue = new HashMap<UUID, PluginCommandType>();
-        transferQueue = new HashMap<UUID, String>();
-        sellQueue = new HashMap<UUID, Double>();
-        buyQueue = new HashMap<UUID, UUID>();
-        claimQueue = new HashMap<UUID, UUID>();
-        forSale = null;
-        forClaim = new ArrayList<UUID>();
+        commandQueue.clear();
+        transferQueue.clear();
+        sellQueue.clear();
+        buyQueue.clear();
+        claimQueue.clear();
+        forClaim.clear();
+        if(PetStore.isEconomy()) {
+            forSale.clear();
+        }
         this.reloadConfig();
         message.reload();
         readData();

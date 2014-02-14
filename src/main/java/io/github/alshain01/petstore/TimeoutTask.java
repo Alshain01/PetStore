@@ -4,7 +4,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 
 final class TimeoutTask extends BukkitRunnable{
-
     private final PetStore plugin;
     private final PluginCommandType action;
     private final Player player;

@@ -1,6 +1,7 @@
 package io.github.alshain01.petstore;
 
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
@@ -36,9 +37,11 @@ class PluginCommand implements CommandExecutor {
         switch(action) {
             case RELOAD:
                 plugin.reload();
+                sender.sendMessage(ChatColor.GREEN + "" + ChatColor.ITALIC + "PetStore Reloaded");
                 return true;
             case SAVE:
                 plugin.writeData();
+                sender.sendMessage(ChatColor.GREEN + "" + ChatColor.ITALIC + "PetStore Data Saved");
                 return true;
             default:
                 break;
@@ -46,13 +49,12 @@ class PluginCommand implements CommandExecutor {
 
         // All of the remaining commands require an animal entity to be identified
         if(!(sender instanceof Player)) {
-            sender.sendMessage(Message.CONSOLE_ERROR.get());
+            sender.sendMessage(getHelp(sender));
             return true;
         }
 
         final Player player = (Player) sender;
         final UUID pID = player.getUniqueId();
-
 
         // Check the permissions
         if(!action.hasPermission(player)) {
@@ -111,6 +113,7 @@ class PluginCommand implements CommandExecutor {
         StringBuilder helpText = new StringBuilder("/petstore <");
         boolean first = true;
         for(PluginCommandType a : PluginCommandType.values()) {
+            if(a.equals(PluginCommandType.SAVE) || a.equals(PluginCommandType.RELOAD)) { continue; } // Don't show in game
             if(a.hasPermission(sender)) {
                 if(a != PluginCommandType.SELL || PetStore.isEconomy()) {
                     if(!first) { helpText.append(" | "); }
