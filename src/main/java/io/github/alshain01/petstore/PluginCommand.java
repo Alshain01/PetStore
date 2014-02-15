@@ -113,7 +113,7 @@ class PluginCommand implements CommandExecutor {
         StringBuilder helpText = new StringBuilder("/petstore <");
         boolean first = true;
         for(PluginCommandType a : PluginCommandType.values()) {
-            if(a.equals(PluginCommandType.SAVE) || a.equals(PluginCommandType.RELOAD)) { continue; } // Don't show in game
+            if(a.isHidden()) { continue; }
             if(a.hasPermission(sender)) {
                 if(a != PluginCommandType.SELL || PetStore.isEconomy()) {
                     if(!first) { helpText.append(" | "); }

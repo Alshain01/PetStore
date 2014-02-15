@@ -34,24 +34,39 @@ final class AnimalListener implements Listener {
                   || plugin.forClaim.contains(aID))) {
 
             Tameable tameable = (Tameable)entity;
-
             if(!tameable.isTamed()) {
+                System.out.print("Animal is not tamed");
                 if(PluginCommandType.TAME.equals(plugin.commandQueue.get(pID))) {
                     Animal.tame(player, tameable);
                     plugin.commandQueue.remove(player.getUniqueId());
                     e.setCancelled(true);
+                    return;
                 }
             }
 
+            // Cancel needs to happen first
+            if(plugin.commandQueue.containsKey(pID) && plugin.commandQueue.get(pID).equals(PluginCommandType.CANCEL)) {
+                if(Animal.isOwner(player, tameable)) {
+                    if(plugin.forClaim.remove(entity.getUniqueId())) {
+                           player.sendMessage(Message.GIVE_CANCEL.get());
+                    }
+                    Animal.sell(plugin, player, tameable, null, 0D);
+                    plugin.commandQueue.remove(pID);
+                }
+                e.setCancelled(true);
+                return;
+            }
+
             if(plugin.forClaim.contains(aID)) {
-                if(plugin.claimQueue.get(pID).equals(aID)) {
+                UUID u = plugin.claimQueue.get(pID);
+                if(u != null && plugin.claimQueue.get(pID).equals(aID)) {
                     Animal.claim(player, tameable);
                     plugin.claimQueue.remove(pID);
                     plugin.forClaim.remove(aID);
                 } else {
                     player.sendMessage(Message.CLAIM_INSTRUCTION.get());
                     plugin.claimQueue.put(pID, aID);
-                    new TimeoutTask(plugin, PluginCommandType.BUY, player).runTaskLater(plugin, plugin.timeout);
+                    new TimeoutTask(plugin, PluginCommandType.CLAIM, player).runTaskLater(plugin, plugin.timeout);
                 }
                 e.setCancelled(true);
                 return;
@@ -73,7 +88,7 @@ final class AnimalListener implements Listener {
                 return;
             }
 
-            if(plugin.commandQueue.get(pID) != null) {
+            if(plugin.commandQueue.containsKey(pID)) {
                 switch(plugin.commandQueue.get(pID)) {
                     case TAME:
                         player.sendMessage(Message.TAME_ERROR.get());
@@ -83,12 +98,6 @@ final class AnimalListener implements Listener {
                         break;
                     case GIVE:
                         Animal.give(plugin, player, plugin.flags.get("GivePet"), tameable);
-                        break;
-                    case CANCEL:
-                        if(Animal.isOwner(player, tameable)) {
-                            plugin.forClaim.remove(entity.getUniqueId());
-                            Animal.sell(plugin, player, tameable, null, 0D);
-                        }
                         break;
                     default:
                         break;

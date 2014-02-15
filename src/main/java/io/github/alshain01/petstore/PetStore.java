@@ -77,6 +77,7 @@ public class PetStore extends JavaPlugin {
         }
 
         timeout = getConfig().getLong("CommandTimeout");
+        readData();
         pm.registerEvents(new AnimalListener(this), this);
         getCommand("petstore").setExecutor(new PluginCommand(this));
     }
@@ -105,6 +106,7 @@ public class PetStore extends JavaPlugin {
     private void readData() {
         CustomYML yml = new CustomYML(this, "data.yml");
         for(Object o : yml.getConfig().getList("Give")) {
+            System.out.print(o.toString());
             forClaim.add(UUID.fromString((String) o));
         }
         if(PetStore.isEconomy() && yml.getConfig().isConfigurationSection("Sales")) {

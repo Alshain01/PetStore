@@ -134,7 +134,9 @@ final class Animal {
     static void give(PetStore plugin, Player player, Object flag, Tameable animal) {
         if(!isOwner(player, animal) || isFlagSet(player, flag, ((Entity)animal).getLocation())) { return; }
         plugin.forClaim.add(((Entity)animal).getUniqueId());
-        plugin.forSale.remove(((Entity)animal).getUniqueId());  // Only one at a time
+        if(plugin.forSale != null) {
+            plugin.forSale.remove(((Entity)animal).getUniqueId());  // Only one at a time
+        }
         player.sendMessage(Message.GIVE_SET.get());
     }
 
