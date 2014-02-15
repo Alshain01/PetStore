@@ -37,7 +37,7 @@ Message:
   #
   CLAIM_NOTIFY: '&aYou have claimed this animal.'
   BUY_NOTIFY_OWNER: '&6{Player} &ahas purchased an animal for &6{Price}&a.'
-  BUY_NOTIFY_RECEIVER: 'Transaction successful.'
+  BUY_NOTIFY_RECEIVER: '&6Transaction successful.'
   TRANSFER_NOTIFY_OWNER: '&aThe animal ownership has been transferred to &6{Player}&a.'
   TRANSFER_NOTIFY_RECEIVER: '&6{Player} &ahas transferred ownership of an animal currently at &6{Location}&a.'
   BUY_LOW_FUNDS: '&cThis animal costs &6{Price}&c. You do not have enough funds for this purchase.'

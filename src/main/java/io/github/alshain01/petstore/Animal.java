@@ -123,7 +123,7 @@ final class Animal {
 
         player.sendMessage(Message.BUY_NOTIFY_RECEIVER.get());
         if(((Player)animal.getOwner()).isOnline()) {
-            player.sendMessage(Message.BUY_NOTIFY_OWNER.get()
+            ((Player)animal.getOwner()).sendMessage(Message.BUY_NOTIFY_OWNER.get()
                     .replaceAll("\\{Player\\}", player.getName())
                     .replaceAll("\\{Price\\}", plugin.economy.format(price)));
         }
