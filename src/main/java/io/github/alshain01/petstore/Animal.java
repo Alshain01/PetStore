@@ -9,6 +9,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.*;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.Plugin;
 
 import java.util.UUID;
 
@@ -44,8 +45,8 @@ final class Animal {
         }
     }
 
-    static void release(Player player, Object flag, Tameable animal) {
-        if(!isOwner(player, animal) || isFlagSet(player, flag, ((Entity)animal).getLocation())) { return; }
+    static boolean release(Player player, Object flag, Tameable animal) {
+        if(!isOwner(player, animal) || isFlagSet(player, flag, ((Entity)animal).getLocation())) { return false; }
 
         if(animal instanceof Ocelot) {
             ((Ocelot)animal).setCatType(Ocelot.Type.WILD_OCELOT);
@@ -64,15 +65,17 @@ final class Animal {
         }
         ((LivingEntity)animal).setLeashHolder(null);
         animal.setOwner(null);
+
+        return true;
     }
 
-    static void transfer(Player owner, Tameable animal, Object flag, String receiver) {
-        if(!Animal.isOwner(owner, animal)|| isFlagSet(owner, flag, ((Entity)animal).getLocation())) { return; }
+    static boolean transfer(Player owner, Tameable animal, Object flag, String receiver) {
+        if(!Animal.isOwner(owner, animal)|| isFlagSet(owner, flag, ((Entity)animal).getLocation())) { return false; }
 
         Player r = Bukkit.getPlayer(receiver);
         if (r == null) {
             owner.sendMessage(Message.PLAYER_ERROR.get());
-            return;
+            return false;
         }
 
         animal.setOwner(r);
@@ -81,6 +84,7 @@ final class Animal {
         owner.sendMessage(Message.TRANSFER_NOTIFY_OWNER.get().replaceAll("\\{Player\\}", r.getName()));
         r.sendMessage(Message.TRANSFER_NOTIFY_RECEIVER.get().replaceAll("\\{Player\\}", owner.getName())
                         .replaceAll("\\{Location\\}", "X: " + loc.getBlockX() + ", Z: " +loc.getBlockZ()));
+        return true;
     }
 
     static void sell(PetStore plugin, Player player, Tameable animal, Object flag, Double price) {
@@ -99,7 +103,8 @@ final class Animal {
         }
     }
 
-    static boolean advertise(PetStore plugin, Player player, Double price) {
+    static boolean advertise(PetStore plugin, Player player, Tameable animal, Double price) {
+        if(animal.getOwner().equals(player)) { return false; }
         if(price > plugin.economy.getBalance(player.getName())) {
             player.sendMessage(Message.BUY_LOW_FUNDS.get()
                     .replaceAll("\\{Price\\}", plugin.economy.format(price)));
@@ -131,13 +136,20 @@ final class Animal {
         return true;
     }
 
-    static void give(PetStore plugin, Player player, Object flag, Tameable animal) {
-        if(!isOwner(player, animal) || isFlagSet(player, flag, ((Entity)animal).getLocation())) { return; }
+    static boolean give(PetStore plugin, Player player, Object flag, Tameable animal) {
+        if(!isOwner(player, animal) || isFlagSet(player, flag, ((Entity)animal).getLocation())) { return false; }
         plugin.forClaim.add(((Entity)animal).getUniqueId());
         if(plugin.forSale != null) {
             plugin.forSale.remove(((Entity)animal).getUniqueId());  // Only one at a time
         }
         player.sendMessage(Message.GIVE_SET.get());
+        return true;
+    }
+
+    static boolean requestClaim(Player player, Tameable animal) {
+        if(animal.getOwner().equals(player)) { return false; }
+        player.sendMessage(Message.CLAIM_INSTRUCTION.get());
+        return true;
     }
 
     static void claim(Player player, Tameable animal) {
