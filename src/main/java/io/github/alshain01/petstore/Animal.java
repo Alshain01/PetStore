@@ -41,6 +41,7 @@ final class Animal {
         if(animal instanceof Wolf) {
             ((Wolf)animal).setSitting(true);
         }
+        player.sendMessage(Message.ACTION_NOTIFY.get().replaceAll("\\{Action\\}", "tamed"));
     }
 
     static boolean release(Player player, Object flag, Tameable animal) {
@@ -63,7 +64,7 @@ final class Animal {
         }
         ((LivingEntity)animal).setLeashHolder(null);
         animal.setOwner(null);
-
+        player.sendMessage(Message.ACTION_NOTIFY.get().replaceAll("\\{Action\\}", "released"));
         return true;
     }
 
@@ -76,10 +77,11 @@ final class Animal {
             return false;
         }
 
-        animal.setOwner(r);
+
 
         Location loc = ((Entity)animal).getLocation();
-        owner.sendMessage(Message.TRANSFER_NOTIFY_OWNER.get().replaceAll("\\{Player\\}", r.getName()));
+        ((Player)animal.getOwner()).sendMessage(Message.TRANSFER_NOTIFY_OWNER.get().replaceAll("\\{Player\\}", r.getName()));
+        animal.setOwner(r);
         r.sendMessage(Message.TRANSFER_NOTIFY_RECEIVER.get().replaceAll("\\{Player\\}", owner.getName())
                         .replaceAll("\\{Location\\}", "X: " + loc.getBlockX() + ", Z: " +loc.getBlockZ()));
         return true;
@@ -144,7 +146,7 @@ final class Animal {
 
     static void claim(Player player, Tameable animal) {
         animal.setOwner(player);
-        player.sendMessage(Message.CLAIM_NOTIFY.get());
+        player.sendMessage(Message.ACTION_NOTIFY.get().replaceAll("\\{Action\\}", "claimed"));
     }
 
     static boolean isOwner(Player player, Tameable animal) {

@@ -27,7 +27,6 @@ Message:
   CLICK_INSTRUCTION: '&bRight click on the tameable animal you wish to {Action}.'
   CLAIM_INSTRUCTION: '&bThis animal is available. Right click to claim it.'
   BUY_INSTRUCTION: '&bThis animal costs &6{Price}&b. Right click the animal again to purchase.'
-
   GIVE_CANCEL: '&aThe animal is no longer being given away.'
   SELL_CANCEL: '&aThe animal is no longer for sale.'
   GIVE_SET: '&aThis animal has been set to be given away.'
@@ -35,7 +34,7 @@ Message:
   #
   # Notification
   #
-  CLAIM_NOTIFY: '&aYou have claimed this animal.'
+  ACTION_NOTIFY: '&aYou have {Action} this animal.'
   BUY_NOTIFY_OWNER: '&6{Player} &ahas purchased an animal for &6{Price}&a.'
   BUY_NOTIFY_RECEIVER: '&6Transaction successful.'
   TRANSFER_NOTIFY_OWNER: '&aThe animal ownership has been transferred to &6{Player}&a.'

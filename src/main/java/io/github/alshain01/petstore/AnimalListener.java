@@ -25,7 +25,7 @@ final class AnimalListener implements Listener {
 
         if(!(entity instanceof Tameable)
                 || !(plugin.commandQueue.containsKey(pID)
-                || plugin.forSale.containsKey(aID)
+                || (plugin.forSale != null && plugin.forSale.containsKey(aID))
                 || plugin.forClaim.contains(aID))) { return; }
 
         Tameable tameable = (Tameable)entity;

@@ -105,13 +105,19 @@ public class PetStore extends JavaPlugin {
 
     private void readData() {
         CustomYML yml = new CustomYML(this, "data.yml");
-        for(Object o : yml.getConfig().getList("Give")) {
-            forClaim.add(UUID.fromString((String) o));
+        List<?> gives = yml.getConfig().getList("Give");
+        if(gives != null) {
+            for(Object o : yml.getConfig().getList("Give")) {
+                forClaim.add(UUID.fromString((String) o));
+            }
         }
+
         if(PetStore.isEconomy() && yml.getConfig().isConfigurationSection("Sales")) {
             Set<String> keys = yml.getConfig().getConfigurationSection("Sales").getKeys(false);
-            for(String k : keys) {
-                forSale.put(UUID.fromString(k), yml.getConfig().getDouble("Sales." + k));
+            if(keys != null) {
+                for(String k : keys) {
+                    forSale.put(UUID.fromString(k), yml.getConfig().getDouble("Sales." + k));
+                }
             }
         }
     }
