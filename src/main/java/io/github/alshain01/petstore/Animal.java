@@ -3,15 +3,13 @@ package io.github.alshain01.petstore;
 import io.github.alshain01.flags.Flag;
 import io.github.alshain01.flags.area.Area;
 import io.github.alshain01.flags.System;
+import net.milkbowl.vault.economy.Economy;
 import net.milkbowl.vault.economy.EconomyResponse;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.*;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.plugin.Plugin;
-
-import java.util.UUID;
 
 final class Animal {
     private Animal() { }
@@ -87,20 +85,16 @@ final class Animal {
         return true;
     }
 
-    static void sell(PetStore plugin, Player player, Tameable animal, Object flag, Double price) {
-        if(!isOwner(player, animal) || isFlagSet(player, flag, ((Entity)animal).getLocation())) { return; }
-        UUID aID = ((Entity)animal).getUniqueId();
+    static Boolean sell(Economy economy, Player player, Tameable animal, Object flag, Double price) {
+        if(!isOwner(player, animal) || isFlagSet(player, flag, ((Entity)animal).getLocation())) { return null; }
 
         if(price > 0D) {
-            plugin.forSale.put(aID, price);
-            plugin.forClaim.remove(((Entity)animal).getUniqueId());  // Only one at a time
-            player.sendMessage(Message.SELL_SET.get().replaceAll("\\{Price\\}", plugin.economy.format(price)));
-        } else {
-            if(plugin.forSale.containsKey(aID)) {
-                plugin.forSale.remove(aID);
-                player.sendMessage(Message.SELL_CANCEL.get());
-            }
+            player.sendMessage(Message.SELL_SET.get().replaceAll("\\{Price\\}", economy.format(price)));
+            return true;
         }
+
+        player.sendMessage(Message.SELL_CANCEL.get());
+        return false;
     }
 
     static boolean advertise(PetStore plugin, Player player, Tameable animal, Double price) {
@@ -115,12 +109,12 @@ final class Animal {
         return true;
     }
 
-    static boolean buy(PetStore plugin, Player player, Tameable animal, Double price) {
-        EconomyResponse r = plugin.economy.withdrawPlayer(player.getName(), price);
+    static boolean buy(Economy economy, Player player, Tameable animal, Double price) {
+        EconomyResponse r = economy.withdrawPlayer(player.getName(), price);
         if(r.transactionSuccess()) {
-            r = plugin.economy.depositPlayer(animal.getOwner().getName(), price);
+            r = economy.depositPlayer(animal.getOwner().getName(), price);
             if(!r.transactionSuccess()) {
-                plugin.economy.depositPlayer(player.getName(), price); // Put it back.
+                economy.depositPlayer(player.getName(), price); // Put it back.
                 player.sendMessage(Message.TRANSACTION_ERROR.get());
                 return false;
             }
@@ -130,18 +124,14 @@ final class Animal {
         if(((Player)animal.getOwner()).isOnline()) {
             ((Player)animal.getOwner()).sendMessage(Message.BUY_NOTIFY_OWNER.get()
                     .replaceAll("\\{Player\\}", player.getName())
-                    .replaceAll("\\{Price\\}", plugin.economy.format(price)));
+                    .replaceAll("\\{Price\\}", economy.format(price)));
         }
         animal.setOwner(player);
         return true;
     }
 
-    static boolean give(PetStore plugin, Player player, Object flag, Tameable animal) {
+    static boolean give(Player player, Object flag, Tameable animal) {
         if(!isOwner(player, animal) || isFlagSet(player, flag, ((Entity)animal).getLocation())) { return false; }
-        plugin.forClaim.add(((Entity)animal).getUniqueId());
-        if(plugin.forSale != null) {
-            plugin.forSale.remove(((Entity)animal).getUniqueId());  // Only one at a time
-        }
         player.sendMessage(Message.GIVE_SET.get());
         return true;
     }

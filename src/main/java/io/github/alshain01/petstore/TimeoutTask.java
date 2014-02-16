@@ -15,15 +15,7 @@ final class TimeoutTask extends BukkitRunnable{
     }
 
     public void run() {
-        if(action.equals(PluginCommandType.CLAIM)) {
-            if(plugin.claimQueue.remove(player.getUniqueId()) == null) {
-                return; // No message
-            }
-        } else if(action.equals(PluginCommandType.BUY)) {
-            if(plugin.buyQueue.remove(player.getUniqueId()) == null) {
-                return; // No Message
-            }
-        } else if(action.equals(plugin.commandQueue.get(player.getUniqueId()))) {
+        if(action.equals(plugin.commandQueue.get(player.getUniqueId()))) {
             plugin.commandQueue.remove(player.getUniqueId());
         } else {
             return;

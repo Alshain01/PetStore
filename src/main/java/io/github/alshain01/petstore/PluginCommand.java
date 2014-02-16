@@ -77,6 +77,7 @@ class PluginCommand implements CommandExecutor {
                 if (receiver == null) {
                     player.sendMessage(Message.PLAYER_ERROR.get());
                 } else {
+                    plugin.commandQueue.put(pID, action);
                     plugin.transferQueue.put(pID, receiver.getName());
                     player.sendMessage(Message.CLICK_INSTRUCTION.get().replaceAll("\\{Action\\}", action.getMessage().toLowerCase()));
                     new TimeoutTask(plugin, action, player).runTaskLater(plugin, plugin.timeout);
@@ -95,6 +96,7 @@ class PluginCommand implements CommandExecutor {
                     player.sendMessage(Message.PRICE_ERROR.get());
                     return true;
                 }
+                plugin.commandQueue.put(pID, action);
                 plugin.sellQueue.put(pID, price);
                 player.sendMessage(Message.CLICK_INSTRUCTION.get().replaceAll("\\{Action\\}", action.getMessage().toLowerCase()));
                 new TimeoutTask(plugin, action, player).runTaskLater(plugin, plugin.timeout);
