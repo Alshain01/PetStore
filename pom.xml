@@ -2,7 +2,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>io.github.alshain01.petstore</groupId>
     <artifactId>PetStore</artifactId>
-    <version>1.2.0</version>
+    <version>1.2.1</version>
     <name>${project.artifactId}</name>
     <description>A plugin that that allows ownership management of tamable animals.</description>
     <url>http://dev.bukkit.org/bukkit-plugins/petstore</url>
