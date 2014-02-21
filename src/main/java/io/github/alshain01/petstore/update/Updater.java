@@ -11,10 +11,11 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.Enumeration;
+import java.util.List;
+import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-import org.bukkit.plugin.Plugin;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
@@ -38,8 +39,11 @@ import org.json.simple.JSONValue;
 @SuppressWarnings("ALL")
 final class Updater {
 
-    private final Plugin plugin;
+    private final Logger log;
     private final UpdateType type;
+    private final File dataFolder;
+    private final List<String> authors;
+    private final String version;
     private String versionName;
     private String versionLink;
     private String versionType;
@@ -134,13 +138,16 @@ final class Updater {
      * @param type Specify the type of update this will be. See {@link UpdateType}
      * @param announce True if the program should announce the progress of new updates in console
      */
-    public Updater(Plugin plugin, int id, File file, UpdateType type, String key, boolean announce) {
-        this.plugin = plugin;
+    public Updater(List<String> authors, File dataFolder, String updateFolder, String version, Logger log, int id, File file, UpdateType type, String key, boolean announce) {
+        this.updateFolder = updateFolder;
+        this.dataFolder = dataFolder;
+        this.authors = authors;
+        this.version = version;
+        this.log = log;
         this.type = type;
         this.announce = announce;
         this.file = file;
         this.id = id;
-        this.updateFolder = plugin.getServer().getUpdateFolder();
 
         if (key == null || key.equalsIgnoreCase("null") || key.equals("")) {
             key = null;
@@ -150,7 +157,7 @@ final class Updater {
         try {
             this.url = new URL(Updater.HOST + Updater.QUERY + id);
         } catch (final MalformedURLException e) {
-            plugin.getLogger().severe("The project ID provided for updating, " + id + " is invalid.");
+            log.severe("The project ID provided for updating, " + id + " is invalid.");
             this.result = UpdateResult.FAIL_BADID;
             e.printStackTrace();
         }
@@ -232,7 +239,7 @@ final class Updater {
             final byte[] data = new byte[Updater.BYTE_SIZE];
             int count;
             if (this.announce) {
-                this.plugin.getLogger().info("About to download a new update: " + this.versionName);
+                this.log.info("About to download a new update: " + this.versionName);
             }
             long downloaded = 0;
             while ((count = in.read(data, 0, Updater.BYTE_SIZE)) != -1) {
@@ -240,11 +247,11 @@ final class Updater {
                 fout.write(data, 0, count);
                 final int percent = (int) ((downloaded * 100) / fileLength);
                 if (this.announce && ((percent % 10) == 0)) {
-                    this.plugin.getLogger().info("Downloading update: " + percent + "% of " + fileLength + " bytes.");
+                    this.log.info("Downloading update: " + percent + "% of " + fileLength + " bytes.");
                 }
             }
             //Just a quick check to make sure we didn't leave any files from last time...
-            for (final File xFile : new File(this.plugin.getDataFolder().getParent(), this.updateFolder).listFiles()) {
+            for (final File xFile : new File(this.dataFolder.getParent(), this.updateFolder).listFiles()) {
                 if (xFile.getName().endsWith(".zip")) {
                     xFile.delete();
                 }
@@ -256,10 +263,10 @@ final class Updater {
                 this.unzip(dFile.getCanonicalPath());
             }
             if (this.announce) {
-                this.plugin.getLogger().info("Finished updating.");
+                this.log.info("Finished updating.");
             }
         } catch (final Exception ex) {
-            this.plugin.getLogger().warning("The auto-updater tried to download a new update, but was unsuccessful.");
+            this.log.warning("The auto-updater tried to download a new update, but was unsuccessful.");
             this.result = Updater.UpdateResult.FAIL_DOWNLOAD;
         } finally {
             try {
@@ -270,7 +277,7 @@ final class Updater {
                     fout.close();
                 }
             } catch (final Exception ex) {
-                this.plugin.getLogger().warning("Failed to close data file.");
+                this.log.warning("Failed to close data file.");
             }
         }
     }
@@ -304,7 +311,7 @@ final class Updater {
                     bis.close();
                     final String name = destinationFilePath.getName();
                     if (name.endsWith(".jar") && this.pluginFile(name)) {
-                        destinationFilePath.renameTo(new File(this.plugin.getDataFolder().getParent(), this.updateFolder + "/" + name));
+                        destinationFilePath.renameTo(new File(this.dataFolder.getParent(), this.updateFolder + "/" + name));
                     }
                 }
                 entry = null;
@@ -318,7 +325,7 @@ final class Updater {
             for (final File dFile : new File(zipPath).listFiles()) {
                 if (dFile.isDirectory()) {
                     if (this.pluginFile(dFile.getName())) {
-                        final File oFile = new File(this.plugin.getDataFolder().getParent(), dFile.getName()); // Get current dir
+                        final File oFile = new File(this.dataFolder.getParent(), dFile.getName()); // Get current dir
                         final File[] contents = oFile.listFiles(); // List of existing files in the current dir
                         for (final File cFile : dFile.listFiles()) // Loop through all the files in the new dir
                         {
@@ -345,7 +352,7 @@ final class Updater {
             new File(zipPath).delete();
             fSourceZip.delete();
         } catch (final IOException ex) {
-            this.plugin.getLogger().warning("The auto-updater tried to unzip a new update file, but was unsuccessful.");
+            this.log.warning("The auto-updater tried to unzip a new update file, but was unsuccessful.");
             this.result = Updater.UpdateResult.FAIL_DOWNLOAD;
             ex.printStackTrace();
         }
@@ -369,7 +376,6 @@ final class Updater {
      */
     private boolean versionCheck(String title) {
         if (this.type != UpdateType.NO_VERSION_CHECK) {
-            final String version = this.plugin.getDescription().getVersion();
             if (title.split(" v").length == 2) {
                 final String remoteVersion = title.split(" v")[1].split(" ")[0]; // Get the newest file's version number
                 int remVer = -1, curVer = 0;
@@ -386,10 +392,10 @@ final class Updater {
                 }
             } else {
                 // The file's name did not contain the string 'vVersion'
-                final String authorInfo = this.plugin.getDescription().getAuthors().size() == 0 ? "" : " (" + this.plugin.getDescription().getAuthors().get(0) + ")";
-                this.plugin.getLogger().warning("The author of this plugin" + authorInfo + " has misconfigured their Auto Update system");
-                this.plugin.getLogger().warning("Files uploaded to BukkitDev should contain the version number, seperated from the name by a 'v', such as PluginName v1.0");
-                this.plugin.getLogger().warning("Please notify the author of this error.");
+                final String authorInfo = authors.size() == 0 ? "" : " (" + authors.get(0) + ")";
+                this.log.warning("The author of this plugin" + authorInfo + " has misconfigured their Auto Update system");
+                this.log.warning("Files uploaded to BukkitDev should contain the version number, seperated from the name by a 'v', such as PluginName v1.0");
+                this.log.warning("Please notify the author of this error.");
                 this.result = Updater.UpdateResult.FAIL_NOVERSION;
                 return false;
             }
@@ -444,7 +450,7 @@ final class Updater {
             final JSONArray array = (JSONArray) JSONValue.parse(response);
 
             if (array.size() == 0) {
-                this.plugin.getLogger().warning("The updater could not find any files for the project id " + this.id);
+                this.log.warning("The updater could not find any files for the project id " + this.id);
                 this.result = UpdateResult.FAIL_BADID;
                 return false;
             }
@@ -457,12 +463,12 @@ final class Updater {
             return true;
         } catch (final IOException e) {
             if (e.getMessage().contains("HTTP response code: 403")) {
-                this.plugin.getLogger().warning("dev.bukkit.org rejected the API key provided in plugins/Updater/config.yml");
-                this.plugin.getLogger().warning("Please double-check your configuration to ensure it is correct.");
+                this.log.warning("dev.bukkit.org rejected the API key provided in plugins/Updater/config.yml");
+                this.log.warning("Please double-check your configuration to ensure it is correct.");
                 this.result = UpdateResult.FAIL_APIKEY;
             } else {
-                this.plugin.getLogger().warning("The updater could not contact dev.bukkit.org for updating.");
-                this.plugin.getLogger().warning("If you have not recently modified your configuration and this is the first time you are seeing this message, the site may be experiencing temporary downtime.");
+                this.log.warning("The updater could not contact dev.bukkit.org for updating.");
+                this.log.warning("If you have not recently modified your configuration and this is the first time you are seeing this message, the site may be experiencing temporary downtime.");
                 this.result = UpdateResult.FAIL_DBO;
             }
             e.printStackTrace();
@@ -485,7 +491,7 @@ final class Updater {
                                 final String[] split = Updater.this.versionLink.split("/");
                                 name = split[split.length - 1];
                             }
-                            Updater.this.saveFile(new File(Updater.this.plugin.getDataFolder().getParent(), Updater.this.updateFolder), name, Updater.this.versionLink);
+                            Updater.this.saveFile(new File(dataFolder.getParent(), Updater.this.updateFolder), name, Updater.this.versionLink);
                         } else {
                             Updater.this.result = UpdateResult.UPDATE_AVAILABLE;
                         }
