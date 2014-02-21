@@ -105,7 +105,7 @@ final class Animal {
 
 
         Location loc = ((Entity)animal).getLocation();
-        ((Player)animal.getOwner()).sendMessage(Message.TRANSFER_NOTIFY_OWNER.get().replaceAll("\\{Player\\}", r.getName()));
+        ((Player)animal.getOwner()).sendMessage(Message.TRANSFER_NOTIFY_OWNER.get().replace("\\{Player\\}", r.getName()));
         animal.setOwner(r);
         r.sendMessage(Message.TRANSFER_NOTIFY_RECEIVER.get().replaceAll("\\{Player\\}", owner.getName())
                         .replaceAll("\\{Location\\}", "X: " + loc.getBlockX() + ", Z: " +loc.getBlockZ()));
@@ -116,7 +116,7 @@ final class Animal {
         if(!isOwner(player, animal) || isFlagSet(player, flag, ((Entity)animal).getLocation())) { return null; }
 
         if(price > 0D) {
-            player.sendMessage(Message.SELL_SET.get().replaceAll("\\{Price\\}", economy.format(price)));
+            player.sendMessage(Message.SELL_SET.get().replace("{Price}", economy.format(price)));
             return true;
         }
 

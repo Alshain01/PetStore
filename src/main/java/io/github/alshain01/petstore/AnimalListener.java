@@ -43,7 +43,7 @@ final class AnimalListener implements Listener {
     }
 
     @EventHandler(priority = EventPriority.NORMAL)
-    private void onPlayerCancelAnimalActions(PlayerInteractEntityEvent e) {
+    private void onAnimalInteract(PlayerInteractEntityEvent e) {
         final Player player = e.getPlayer();
         final Entity entity = e.getRightClicked();
         final UUID pID = player.getUniqueId(),  aID = entity.getUniqueId();
