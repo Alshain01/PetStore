@@ -92,7 +92,12 @@ public class PetStore extends JavaPlugin {
         ConfigurationSection updateConfig = getConfig().getConfigurationSection("Update");
         if (updateConfig.getBoolean("Check")) {
             UpdateScheduler updater = new UpdateScheduler(this, getFile(), updateConfig);
-            updater.runTaskTimerAsynchronously(this, 0, 1728000);
+            Long timer = updateConfig.getLong("Interval");
+            if(timer < 1) {
+                updater.runTaskAsynchronously(this);
+            } else {
+                updater.runTaskTimerAsynchronously(this, 0, 1200);
+            }
             pm.registerEvents(new UpdateListener(updater), this);
         }
 
