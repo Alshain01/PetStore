@@ -46,6 +46,6 @@ final class TimeoutTask extends BukkitRunnable{
             return;
         }
         plugin.commandQueue.remove(player.getUniqueId());
-        player.sendMessage(Message.TIMEOUT.get().replaceAll("\\{Action\\}", action.getMessage()));
+        player.sendMessage(Message.TIMEOUT.get().replace("{Action}", action.getMessage()));
     }
 }

@@ -96,7 +96,7 @@ public class PetStore extends JavaPlugin {
             if(timer < 1) {
                 updater.runTaskAsynchronously(this);
             } else {
-                updater.runTaskTimerAsynchronously(this, 0, 1200);
+                updater.runTaskTimerAsynchronously(this, 0, timer * 1200);
             }
             pm.registerEvents(new UpdateListener(updater), this);
         }

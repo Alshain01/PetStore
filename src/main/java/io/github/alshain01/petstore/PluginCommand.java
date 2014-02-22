@@ -94,7 +94,7 @@ class PluginCommand implements CommandExecutor {
             case RELEASE:
             case CANCEL:
                 plugin.commandQueue.put(pID, action);
-                player.sendMessage(Message.CLICK_INSTRUCTION.get().replaceAll("\\{Action\\}", action.getMessage().toLowerCase()));
+                player.sendMessage(Message.CLICK_INSTRUCTION.get().replace("{Action}", action.getMessage().toLowerCase()));
                 new TimeoutTask(plugin, action, player).runTaskLater(plugin, plugin.timeout);
                 return true;
             case TRANSFER:
@@ -104,7 +104,7 @@ class PluginCommand implements CommandExecutor {
                 } else {
                     plugin.commandQueue.put(pID, action);
                     plugin.transferQueue.put(pID, receiver.getName());
-                    player.sendMessage(Message.CLICK_INSTRUCTION.get().replaceAll("\\{Action\\}", action.getMessage().toLowerCase()));
+                    player.sendMessage(Message.CLICK_INSTRUCTION.get().replace("{Action}", action.getMessage().toLowerCase()));
                     new TimeoutTask(plugin, action, player).runTaskLater(plugin, plugin.timeout);
                 }
                 return true;
@@ -123,7 +123,7 @@ class PluginCommand implements CommandExecutor {
                 }
                 plugin.commandQueue.put(pID, action);
                 plugin.sellQueue.put(pID, price);
-                player.sendMessage(Message.CLICK_INSTRUCTION.get().replaceAll("\\{Action\\}", action.getMessage().toLowerCase()));
+                player.sendMessage(Message.CLICK_INSTRUCTION.get().replace("{Action}", action.getMessage().toLowerCase()));
                 new TimeoutTask(plugin, action, player).runTaskLater(plugin, plugin.timeout);
                 return true;
             default:
