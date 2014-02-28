@@ -49,7 +49,7 @@ public class PetStore extends JavaPlugin {
 
     final Map<String, Object> flags = new HashMap<String, Object>();
     final Map<UUID, PluginCommandType> commandQueue = new HashMap<UUID, PluginCommandType>();
-    final Map<UUID, String> transferQueue = new HashMap<UUID, String>();
+    final Map<UUID, UUID> transferQueue = new HashMap<UUID, UUID>();
     final Map<UUID, Double> sellQueue = new HashMap<UUID, Double>();
     final Map<UUID, UUID> buyQueue = new HashMap<UUID, UUID>();
     final Map<UUID, UUID> claimQueue = new HashMap<UUID, UUID>();

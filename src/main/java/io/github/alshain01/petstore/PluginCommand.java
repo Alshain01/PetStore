@@ -103,7 +103,7 @@ class PluginCommand implements CommandExecutor {
                     player.sendMessage(Message.PLAYER_ERROR.get());
                 } else {
                     plugin.commandQueue.put(pID, action);
-                    plugin.transferQueue.put(pID, receiver.getName());
+                    plugin.transferQueue.put(pID, receiver.getUniqueId());
                     player.sendMessage(Message.CLICK_INSTRUCTION.get().replace("{Action}", action.getMessage().toLowerCase()));
                     new TimeoutTask(plugin, action, player).runTaskLater(plugin, plugin.timeout);
                 }

@@ -25,6 +25,7 @@
 
 package io.github.alshain01.petstore;
 
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Tameable;
@@ -84,7 +85,7 @@ final class AnimalListener implements Listener {
                     }
                     break;
                 case TRANSFER:
-                    if(Animal.transfer(player, tameable,plugin.flags.get("TransferPet"), plugin.transferQueue.get(pID))) {
+                    if(Animal.transfer(player, tameable,plugin.flags.get("TransferPet"), getPlayer(plugin.transferQueue.get(pID)))) {
                         clearState(aID);
                     }
                     break;
@@ -150,5 +151,14 @@ final class AnimalListener implements Listener {
             plugin.forSale.remove(aID);
         }
         plugin.forClaim.remove(aID);
+    }
+
+    Player getPlayer(UUID pID) {
+        for(Player p : Bukkit.getServer().getOnlinePlayers()) {
+            if(p.getUniqueId().equals(pID)) {
+                return p;
+            }
+        }
+        return null;
     }
 }

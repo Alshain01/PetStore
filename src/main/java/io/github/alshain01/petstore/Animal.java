@@ -30,7 +30,6 @@ import io.github.alshain01.flags.area.Area;
 import io.github.alshain01.flags.System;
 import net.milkbowl.vault.economy.Economy;
 import net.milkbowl.vault.economy.EconomyResponse;
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.*;
@@ -93,21 +92,18 @@ final class Animal {
         return true;
     }
 
-    static boolean transfer(Player owner, Tameable animal, Object flag, String receiver) {
+    static boolean transfer(Player owner, Tameable animal, Object flag, Player receiver) {
         if(!Animal.isOwner(owner, animal)|| isFlagSet(owner, flag, ((Entity)animal).getLocation())) { return false; }
 
-        Player r = Bukkit.getPlayer(receiver);
-        if (r == null) {
+        if (receiver == null) {
             owner.sendMessage(Message.PLAYER_ERROR.get());
             return false;
         }
 
-
-
         Location loc = ((Entity)animal).getLocation();
-        ((Player)animal.getOwner()).sendMessage(Message.TRANSFER_NOTIFY_OWNER.get().replace("{Player}", r.getName()));
-        animal.setOwner(r);
-        r.sendMessage(Message.TRANSFER_NOTIFY_RECEIVER.get().replace("{Player}", owner.getName())
+        ((Player)animal.getOwner()).sendMessage(Message.TRANSFER_NOTIFY_OWNER.get().replace("{Player}", receiver.getName()));
+        animal.setOwner(receiver);
+        receiver.sendMessage(Message.TRANSFER_NOTIFY_RECEIVER.get().replace("{Player}", owner.getName())
                         .replace("{Location}", "X: " + loc.getBlockX() + ", Z: " +loc.getBlockZ()));
         return true;
     }
