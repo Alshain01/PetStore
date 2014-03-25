@@ -25,9 +25,9 @@
 
 package io.github.alshain01.petstore;
 
+import io.github.alshain01.flags.CuboidType;
 import io.github.alshain01.flags.Flag;
 import io.github.alshain01.flags.area.Area;
-import io.github.alshain01.flags.System;
 import net.milkbowl.vault.economy.Economy;
 import net.milkbowl.vault.economy.EconomyResponse;
 import org.bukkit.Location;
@@ -181,7 +181,7 @@ final class Animal {
     private static boolean isFlagSet(Player player, Object flag, Location location) {
         if(flag != null) {
             Flag f = (Flag)flag;
-            Area area = System.getActive().getAreaAt(location);
+            Area area = CuboidType.getActive().getAreaAt(location);
             if(!area.getValue(f, false)
                     && (!player.hasPermission(f.getBypassPermission())
                     || !area.hasTrust(f, player))) {
