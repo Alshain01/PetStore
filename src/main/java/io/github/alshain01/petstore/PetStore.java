@@ -25,15 +25,15 @@
 
 package io.github.alshain01.petstore;
 
-import io.github.alshain01.flags.Flag;
-import io.github.alshain01.flags.Flags;
-import io.github.alshain01.flags.ModuleYML;
+import io.github.alshain01.flags.api.Flag;
+import io.github.alshain01.flags.api.FlagsAPI;
 import io.github.alshain01.petstore.metrics.MetricsManager;
 import io.github.alshain01.petstore.update.UpdateListener;
 import io.github.alshain01.petstore.update.UpdateScheduler;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -47,7 +47,7 @@ public class PetStore extends JavaPlugin {
     long timeout = 250;
     Economy economy = null;
 
-    final Map<String, Object> flags = new HashMap<String, Object>();
+    final Map<String, Object> flagMap = new HashMap<String, Object>();
     final Map<UUID, PluginCommandType> commandQueue = new HashMap<UUID, PluginCommandType>();
     final Map<UUID, UUID> transferQueue = new HashMap<UUID, UUID>();
     final Map<UUID, Double> sellQueue = new HashMap<UUID, Double>();
@@ -80,11 +80,11 @@ public class PetStore extends JavaPlugin {
             getLogger().info("Enabling Flags Integration");
 
             // Connect to the data file and register the flags
-            Set<Flag> flagSet = Flags.getRegistrar().register(new ModuleYML(this, "flags.yml"), this.getName());
-            for(Flag f : flagSet) {
-                flags.put(f.getName(), f);
+            YamlConfiguration flagConfig = YamlConfiguration.loadConfiguration(getResource("flags.yml"));
+            Collection<Flag> flags = FlagsAPI.getRegistrar().registerFlag(flagConfig, this.getName());
+            for(Flag f : flags) {
+                flagMap.put(f.getName(), f);
             }
-            //releaseFlag = Flags.getRegistrar().getFlag("ReleasePet");
         }
 
         PluginManager pm = Bukkit.getPluginManager();

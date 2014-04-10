@@ -80,17 +80,17 @@ final class AnimalListener implements Listener {
                     player.sendMessage(Message.TAME_ERROR.get());
                     break;
                 case RELEASE:
-                    if(Animal.release(player, plugin.flags.get("ReleasePet"), tameable)) {
+                    if(Animal.release(player, plugin.flagMap.get("ReleasePet"), tameable)) {
                         clearState(aID);
                     }
                     break;
                 case TRANSFER:
-                    if(Animal.transfer(player, tameable,plugin.flags.get("TransferPet"), getPlayer(plugin.transferQueue.get(pID)))) {
+                    if(Animal.transfer(player, tameable,plugin.flagMap.get("TransferPet"), getPlayer(plugin.transferQueue.get(pID)))) {
                         clearState(aID);
                     }
                     break;
                 case GIVE:
-                    if(Animal.give(player, plugin.flags.get("GivePet"), tameable)) {
+                    if(Animal.give(player, plugin.flagMap.get("GivePet"), tameable)) {
                         clearState(aID);
                         plugin.forClaim.add(((Entity)tameable).getUniqueId());
                     }
@@ -103,7 +103,7 @@ final class AnimalListener implements Listener {
                     break;
                 case SELL:
                     if(PetStore.isEconomy()) {
-                        Boolean success = Animal.sell(plugin.economy, player, tameable, plugin.flags.get("SellPet"), plugin.sellQueue.get(pID));
+                        Boolean success = Animal.sell(plugin.economy, player, tameable, plugin.flagMap.get("SellPet"), plugin.sellQueue.get(pID));
                         if(success == null) { break; }
                         clearState(aID);
                         if(success) {
